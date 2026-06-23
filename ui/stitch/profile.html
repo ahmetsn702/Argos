@@ -1,0 +1,703 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ARGOS � Target Profile</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries">  function toggleSidebar() {
+    var s = document.getElementById('sidebar');
+    if (s) s.classList.toggle('sidebar-open');
+  }</script>
+<link href="https://fonts.googleapis.com" rel="preconnect"/>
+<link crossorigin="" href="https://fonts.gstatic.com" rel="preconnect"/>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "osint-bg": "#0a0e0b",
+                        "osint-surface": "#0f1712",
+                        "osint-surface-2": "#0a130f",
+                        "osint-accent": "#2ecc71",
+                        "osint-accent-bright": "#00f08a",
+                        "osint-text": "#e9fff6",
+                        "osint-muted": "#7ddfb2",
+                        "osint-border": "#1b2a20",
+                        "osint-danger": "#ff4444",
+                        "osint-warning": "#ffaa00"
+                    },
+                    borderRadius: {
+                        "DEFAULT": "4px",
+                        "lg": "4px",
+                        "xl": "4px",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "sans": ["'JetBrains Mono'", "monospace"],
+                        "mono": ["'JetBrains Mono'", "monospace"]
+                    }
+                },
+            },
+        }
+      function toggleSidebar() {
+    var s = document.getElementById('sidebar');
+    if (s) s.classList.toggle('sidebar-open');
+  }</script>
+<style>
+        body {
+            background-color: #0a0e0b;
+            color: #e9fff6;
+            font-family: 'JetBrains Mono', monospace;
+            overflow-x: hidden;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+            font-size: 20px;
+        }
+        .glow-green {
+            box-shadow: 0 0 12px rgba(46, 204, 113, 0.15);
+        }
+        .glow-accent {
+            box-shadow: 0 0 15px rgba(46, 204, 113, 0.3);
+        }
+        .glow-danger {
+            box-shadow: 0 0 15px rgba(255, 68, 68, 0.25);
+        }
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 10;
+            background: linear-gradient(0deg, rgba(46, 204, 113, 0) 0%, rgba(46, 204, 113, 0.05) 50%, rgba(46, 204, 113, 0) 100%);
+            opacity: 0.1;
+            position: fixed;
+            pointer-events: none;
+            animation: scan 8s linear infinite;
+        }
+        @keyframes scan {
+            0% { top: -100px; }
+            100% { top: 100vh; }
+        }
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #0a0e0b;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1b2a20;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #2ecc71;
+        }
+      @media (max-width: 768px) {
+    #sidebar { transform: translateX(-100%); transition: transform 0.2s ease; position: fixed; z-index: 50; }
+    #sidebar.sidebar-open { transform: translateX(0); }
+    #main-content { margin-left: 0 !important; }
+    #hamburger { display: flex; }
+  }
+  @media (min-width: 769px) { #hamburger { display: none; } }
+  .confidence-bar { display: flex; align-items: center; gap: 6px; margin: 3px 0; }
+  .confidence-bar__track { flex: 1; height: 6px; background: #1b2a20; border-radius: 3px; overflow: hidden; }
+  .confidence-bar__fill { height: 100%; border-radius: 3px; }
+  .confidence-bar__fill--high   { background: #2ecc71; }
+  .confidence-bar__fill--medium { background: #f39c12; }
+  .confidence-bar__fill--low    { background: #e74c3c; }
+  .confidence-bar__score { font-size: 11px; color: #7ddfb2; min-width: 32px; text-align: right; }
+</style>
+</head>
+<body class="flex min-h-screen">
+<button id="hamburger" onclick="toggleSidebar()" style="display:none" class="fixed top-3 left-3 z-[60] text-[#2ecc71] font-mono text-xl bg-[#0a0e0b] border border-[#1b2a20] px-2 py-1 leading-none hover:bg-[#1b2a20] transition-colors">&#9776;</button>
+<div class="scanline"></div>
+<!-- SideNavBar Component -->
+<aside class="fixed left-0 top-0 h-full flex flex-col w-[240px] border-r border-[#1b2a20] bg-[#0a0e0b] z-50" id="sidebar">
+<div class="p-6">
+<h1 class="text-xl font-bold text-[#2ecc71] tracking-[0.2em] font-['JetBrains_Mono'] uppercase">ARGOS OSINT</h1>
+<p class="text-[10px] text-[#7ddfb2] tracking-widest mt-1">SYSTEM ACTIVE</p>
+</div>
+<nav class="flex-1 px-2 space-y-1">
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] hover:bg-[#0f1712] p-4 flex items-center gap-3 transition-all duration-150 ease-in-out font-['JetBrains_Mono'] uppercase tracking-widest text-[13px]" href="#">
+<span class="material-symbols-outlined" data-icon="dashboard">dashboard</span>
+<span>Overview</span>
+</a>
+<a class="text-[#00f08a] bg-[#0f1712] border-l-2 border-[#2ecc71] font-bold p-4 flex items-center gap-3 transition-all duration-150 ease-in-out font-['JetBrains_Mono'] uppercase tracking-widest text-[13px]" href="#">
+<span class="material-symbols-outlined" data-icon="person_search" style="font-variation-settings: 'FILL' 1;">person_search</span>
+<span>Target Profile</span>
+</a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] hover:bg-[#0f1712] p-4 flex items-center gap-3 transition-all duration-150 ease-in-out font-['JetBrains_Mono'] uppercase tracking-widest text-[13px]" href="#">
+<span class="material-symbols-outlined" data-icon="phone_iphone">phone_iphone</span>
+<span>Phone Lookup</span>
+</a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] hover:bg-[#0f1712] p-4 flex items-center gap-3 transition-all duration-150 ease-in-out font-['JetBrains_Mono'] uppercase tracking-widest text-[13px]" href="#">
+<span class="material-symbols-outlined" data-icon="security">security</span>
+<span>Dark Web</span>
+</a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] hover:bg-[#0f1712] p-4 flex items-center gap-3 transition-all duration-150 ease-in-out font-['JetBrains_Mono'] uppercase tracking-widest text-[13px]" href="#">
+<span class="material-symbols-outlined" data-icon="language">language</span>
+<span>Domain Search</span>
+</a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] hover:bg-[#0f1712] p-4 flex items-center gap-3 transition-all duration-150 ease-in-out font-['JetBrains_Mono'] uppercase tracking-widest text-[13px]" href="#">
+<span class="material-symbols-outlined" data-icon="description">description</span>
+<span>Metadata</span>
+</a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] hover:bg-[#0f1712] p-4 flex items-center gap-3 transition-all duration-150 ease-in-out font-['JetBrains_Mono'] uppercase tracking-widest text-[13px]" href="#">
+<span class="material-symbols-outlined" data-icon="settings">settings</span>
+<span>Settings</span>
+</a>
+</nav>
+<div class="px-4 py-6 border-t border-[#1b2a20]">
+<button class="w-full py-2 bg-[#2ecc71] text-black font-bold tracking-widest text-[12px] uppercase glow-accent hover:bg-[#00f08a] transition-all" id="btn-run-scan">
+                RUN SCAN
+            </button>
+</div>
+<div class="px-2 pb-6 space-y-1">
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] hover:bg-[#0f1712] px-4 py-2 flex items-center gap-3 transition-all font-['JetBrains_Mono'] uppercase tracking-widest text-[11px]" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="help">help</span>
+<span>Support</span>
+</a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] hover:bg-[#0f1712] px-4 py-2 flex items-center gap-3 transition-all font-['JetBrains_Mono'] uppercase tracking-widest text-[11px]" href="#">
+<span class="material-symbols-outlined text-[18px]" data-icon="terminal">terminal</span>
+<span>Logs</span>
+</a>
+</div>
+</aside>
+<!-- Main Content Area -->
+<main id="main-content" class="flex-1 ml-[240px] flex flex-col min-h-screen">
+<!-- TopAppBar Component -->
+<header class="sticky top-0 z-50 flex justify-between items-center px-6 py-3 bg-[#0a0e0b]/90 backdrop-blur-md border-b border-[#1b2a20] shadow-[0_0_12px_rgba(46,204,113,0.15)]">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 font-['JetBrains_Mono'] uppercase tracking-wider text-[12px]">
+<span class="text-[#7ddfb2] opacity-80">PROFILE</span>
+<span class="text-[#2ecc71]">/</span>
+<span class="text-[#00f08a] border border-[#2ecc71] px-2 py-0.5 rounded-sm">john.doe</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 font-['JetBrains_Mono'] uppercase tracking-wider text-[11px]">
+<span class="text-[#2ecc71] flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#2ecc71] animate-pulse"></span> API: ONLINE</span>
+<span class="text-[#2ecc71] flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#2ecc71]"></span> REDIS: ACTIVE</span>
+<span class="text-[#2ecc71] flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-[#2ecc71]"></span> GEMINI: READY</span>
+</div>
+<div class="flex items-center gap-4">
+<button class="text-[#7ddfb2] hover:text-[#00f08a] transition-transform active:opacity-80 scale-98">
+<span class="material-symbols-outlined" data-icon="notifications_active">notifications_active</span>
+</button>
+<button class="text-[#7ddfb2] hover:text-[#00f08a] transition-transform active:opacity-80 scale-98">
+<span class="material-symbols-outlined" data-icon="account_tree">account_tree</span>
+</button>
+<div class="w-8 h-8 rounded-sm bg-[#1b2a20] border border-[#2ecc71] flex items-center justify-center text-[10px] font-bold text-[#2ecc71]">
+                        OP
+                    </div>
+</div>
+</div>
+</header>
+<!-- Canvas -->
+<div class="p-6 space-y-6 overflow-y-auto">
+<!-- Section A: Target Header Card -->
+<section class="bg-osint-surface border border-osint-border p-6 glow-green flex flex-col md:flex-row gap-8 items-start relative overflow-hidden">
+<div class="absolute top-0 right-0 w-32 h-32 opacity-10 pointer-events-none">
+<svg class="w-full h-full text-osint-accent fill-current" viewbox="0 0 100 100">
+<path d="M0 0h100v100H0zM10 10v80h80V10H10zM30 30h40v40H30V30z"></path>
+</svg>
+</div>
+<!-- Left: Avatar -->
+<div class="flex flex-col items-center gap-3">
+<div class="w-24 h-24 bg-osint-surface-2 border-2 border-osint-accent flex items-center justify-center text-3xl font-black text-osint-accent tracking-tighter" id="prof-avatar">
+                        JD
+                    </div>
+<span class="bg-osint-surface-2 border border-osint-accent px-2 py-0.5 text-[10px] text-osint-accent font-bold tracking-widest uppercase" id="prof-verify">
+                        [ VERIFIED ]
+                    </span>
+</div>
+<!-- Center: Info -->
+<div class="flex-1 space-y-2">
+<h2 class="text-4xl font-extrabold text-osint-text tracking-tighter uppercase leading-none" id="prof-name">JOHN DOE</h2>
+<div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-osint-accent font-medium" id="prof-handles">
+<span>@johndoe</span>
+<span class="text-osint-border">•</span>
+<span>john.doe@example.com</span>
+<span class="text-osint-border">•</span>
+<span>+90 532 *** ****</span>
+</div>
+<div class="text-[12px] text-osint-muted uppercase tracking-widest flex items-center gap-2" id="prof-meta">
+<span class="material-symbols-outlined text-[14px]" data-icon="location_on">location_on</span>
+                        İstanbul, TR
+                        <span class="ml-2 text-osint-border">•</span>
+                        SCANNED 2026-05-19 23:14 UTC
+                    </div>
+</div>
+<!-- Right: Stats -->
+<div class="w-full md:w-64 space-y-4">
+<div class="flex justify-between items-center">
+<span class="text-[11px] font-bold text-osint-muted uppercase tracking-widest">THREAT LEVEL</span>
+<span class="bg-osint-danger/10 border border-osint-danger px-3 py-1 text-[12px] text-osint-danger font-black glow-danger uppercase tracking-widest" id="prof-risk-badge">
+                            RISK: HIGH
+                        </span>
+</div>
+<div class="space-y-1">
+<div class="flex justify-between text-[10px] text-osint-muted uppercase tracking-widest">
+<span>CONFIDENCE</span>
+<span id="prof-confidence-text">87%</span>
+</div>
+<div class="h-1.5 w-full bg-osint-surface-2 border border-osint-border overflow-hidden">
+<div class="h-full bg-osint-accent glow-accent" id="prof-confidence-bar" style="width: 87%"></div>
+</div>
+</div>
+<div class="flex justify-between items-center text-[11px] font-bold text-osint-muted uppercase tracking-widest">
+<span>MODULES PROCESSED</span>
+<span class="text-osint-accent" id="prof-modules-count">8 / 9</span>
+</div>
+</div>
+</section>
+<!-- Section B: Module Results -->
+<section class="space-y-4">
+<div class="border-b border-osint-border pb-2 flex items-center gap-4">
+<h3 class="text-lg font-black text-osint-accent tracking-[0.2em] uppercase">MODULE RESULTS</h3>
+<div class="h-[1px] flex-1 bg-osint-border"></div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4" id="modules-grid">
+<!-- Module 1 -->
+<div class="bg-osint-surface border border-osint-border p-4 hover:border-osint-accent transition-colors group">
+<div class="flex justify-between items-start mb-3">
+<h4 class="text-[13px] font-bold text-osint-text tracking-wide uppercase">Email OSINT</h4>
+<span class="w-2.5 h-2.5 rounded-full bg-osint-accent shadow-[0_0_8px_rgba(46,204,113,0.5)]"></span>
+</div>
+<p class="text-[10px] text-osint-muted mb-3 font-mono opacity-60">/scan/full/email_matrix</p>
+<ul class="space-y-1 text-[11px] text-osint-text mb-4">
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>14 Accounts found</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>2 Active breaches</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>SPF/DKIM: PASSED</span>
+</li>
+</ul>
+<a class="text-[10px] font-black text-osint-accent uppercase tracking-widest group-hover:underline flex items-center gap-1" href="#">
+                            view detail <span class="text-osint-accent">→</span>
+</a>
+</div>
+<!-- Module 2 -->
+<div class="bg-osint-surface border border-osint-border p-4 hover:border-osint-accent transition-colors group">
+<div class="flex justify-between items-start mb-3">
+<h4 class="text-[13px] font-bold text-osint-text tracking-wide uppercase">Phone Lookup</h4>
+<span class="w-2.5 h-2.5 rounded-full bg-osint-accent shadow-[0_0_8px_rgba(46,204,113,0.5)]"></span>
+</div>
+<p class="text-[10px] text-osint-muted mb-3 font-mono opacity-60">/network/cellular/hss_query</p>
+<ul class="space-y-1 text-[11px] text-osint-text mb-4">
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>Carrier: Turkcell</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>Line type: Mobile</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>Roaming: Inactive</span>
+</li>
+</ul>
+<a class="text-[10px] font-black text-osint-accent uppercase tracking-widest group-hover:underline flex items-center gap-1" href="#">
+                            view detail <span class="text-osint-accent">→</span>
+</a>
+</div>
+<!-- Module 3: Danger -->
+<div class="bg-osint-surface border border-osint-danger/30 p-4 hover:border-osint-danger transition-colors group relative overflow-hidden">
+<div class="absolute top-0 right-0 px-2 py-0.5 bg-osint-danger text-[9px] font-black text-white uppercase tracking-tighter">ALERT</div>
+<div class="flex justify-between items-start mb-3">
+<h4 class="text-[13px] font-bold text-osint-text tracking-wide uppercase">Dark Web</h4>
+<span class="w-2.5 h-2.5 rounded-full bg-osint-danger shadow-[0_0_8px_rgba(255,68,68,0.5)] animate-pulse"></span>
+</div>
+<p class="text-[10px] text-osint-muted mb-3 font-mono opacity-60">/onion/crawlers/v4_cluster</p>
+<ul class="space-y-1 text-[11px] text-osint-text mb-4">
+<li class="flex gap-2">
+<span class="text-osint-danger">›</span>
+<span>Found in: RaidForums</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-danger">›</span>
+<span>Cleartext pwd: john***</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-danger">›</span>
+<span>Asset: SSN exposure</span>
+</li>
+</ul>
+<a class="text-[10px] font-black text-osint-danger uppercase tracking-widest group-hover:underline flex items-center gap-1" href="#">
+                            view detail <span class="text-osint-danger">→</span>
+</a>
+</div>
+<!-- Module 4 -->
+<div class="bg-osint-surface border border-osint-border p-4 hover:border-osint-accent transition-colors group">
+<div class="flex justify-between items-start mb-3">
+<h4 class="text-[13px] font-bold text-osint-text tracking-wide uppercase">Domain Analysis</h4>
+<span class="w-2.5 h-2.5 rounded-full bg-osint-accent shadow-[0_0_8px_rgba(46,204,113,0.5)]"></span>
+</div>
+<p class="text-[10px] text-osint-muted mb-3 font-mono opacity-60">/dns/recon/whois_recursive</p>
+<ul class="space-y-1 text-[11px] text-osint-text mb-4">
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>3 Domains registered</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>Privacy: Enabled</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>IP linking: Active</span>
+</li>
+</ul>
+<a class="text-[10px] font-black text-osint-accent uppercase tracking-widest group-hover:underline flex items-center gap-1" href="#">
+                            view detail <span class="text-osint-accent">→</span>
+</a>
+</div>
+<!-- Module 5 -->
+<div class="bg-osint-surface border border-osint-border p-4 hover:border-osint-accent transition-colors group">
+<div class="flex justify-between items-start mb-3">
+<h4 class="text-[13px] font-bold text-osint-text tracking-wide uppercase">Geo Photo</h4>
+<span class="w-2.5 h-2.5 rounded-full bg-osint-accent shadow-[0_0_8px_rgba(46,204,113,0.5)]"></span>
+</div>
+<p class="text-[10px] text-osint-muted mb-3 font-mono opacity-60">/media/exif/spatial_triangulation</p>
+<ul class="space-y-1 text-[11px] text-osint-text mb-4">
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>Recent: 41.008, 28.978</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>Device: iPhone 15 Pro</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>Pattern: Residential</span>
+</li>
+</ul>
+<a class="text-[10px] font-black text-osint-accent uppercase tracking-widest group-hover:underline flex items-center gap-1" href="#">
+                            view detail <span class="text-osint-accent">→</span>
+</a>
+</div>
+<!-- Module 6 -->
+<div class="bg-osint-surface border border-osint-border p-4 hover:border-osint-accent transition-colors group">
+<div class="flex justify-between items-start mb-3">
+<h4 class="text-[13px] font-bold text-osint-text tracking-wide uppercase">Face Search</h4>
+<span class="w-2.5 h-2.5 rounded-full bg-osint-accent shadow-[0_0_8px_rgba(46,204,113,0.5)]"></span>
+</div>
+<p class="text-[10px] text-osint-muted mb-3 font-mono opacity-60">/biometrics/vision/pimeyes_bridge</p>
+<ul class="space-y-1 text-[11px] text-osint-text mb-4">
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>9 High-confidence hits</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>News appearance found</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>Bio-map: Validated</span>
+</li>
+</ul>
+<a class="text-[10px] font-black text-osint-accent uppercase tracking-widest group-hover:underline flex items-center gap-1" href="#">
+                            view detail <span class="text-osint-accent">→</span>
+</a>
+</div>
+<!-- Module 7 -->
+<div class="bg-osint-surface border border-osint-border p-4 hover:border-osint-accent transition-colors group">
+<div class="flex justify-between items-start mb-3">
+<h4 class="text-[13px] font-bold text-osint-text tracking-wide uppercase">Social Profiles</h4>
+<span class="w-2.5 h-2.5 rounded-full bg-osint-accent shadow-[0_0_8px_rgba(46,204,113,0.5)]"></span>
+</div>
+<p class="text-[10px] text-osint-muted mb-3 font-mono opacity-60">/social/scraper/graph_v2</p>
+<ul class="space-y-1 text-[11px] text-osint-text mb-4">
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>LinkedIn: Active</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>Twitter: @johndoe</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>Mutuals: 4,120 nodes</span>
+</li>
+</ul>
+<a class="text-[10px] font-black text-osint-accent uppercase tracking-widest group-hover:underline flex items-center gap-1" href="#">
+                            view detail <span class="text-osint-accent">→</span>
+</a>
+</div>
+<!-- Module 8 -->
+<div class="bg-osint-surface border border-osint-border p-4 hover:border-osint-accent transition-colors group">
+<div class="flex justify-between items-start mb-3">
+<h4 class="text-[13px] font-bold text-osint-text tracking-wide uppercase">Correlation</h4>
+<span class="w-2.5 h-2.5 rounded-full bg-osint-accent shadow-[0_0_8px_rgba(46,204,113,0.5)]"></span>
+</div>
+<p class="text-[10px] text-osint-muted mb-3 font-mono opacity-60">/logic/engine/pattern_match</p>
+<ul class="space-y-1 text-[11px] text-osint-text mb-4">
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>Identity confirmed: 99%</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>Anomaly detection: OK</span>
+</li>
+<li class="flex gap-2">
+<span class="text-osint-accent">›</span>
+<span>Data hygiene: LOW</span>
+</li>
+</ul>
+<a class="text-[10px] font-black text-osint-accent uppercase tracking-widest group-hover:underline flex items-center gap-1" href="#">
+                            view detail <span class="text-osint-accent">→</span>
+</a>
+</div>
+</div>
+</section>
+<!-- Section C: LLM Analysis -->
+<section class="space-y-4">
+<div class="flex items-center gap-3">
+<h3 class="text-lg font-black text-osint-accent tracking-[0.2em] uppercase">LLM ANALYSIS</h3>
+<span class="px-2 py-0.5 bg-osint-surface-2 border border-osint-border text-[10px] text-osint-muted font-mono lowercase tracking-normal">
+                        gemini-3.5-flash
+                    </span>
+</div>
+<div class="bg-osint-surface border border-osint-border flex flex-col lg:flex-row overflow-hidden">
+<!-- Left: Risk & Findings -->
+<div class="lg:w-[40%] p-6 border-b lg:border-b-0 lg:border-r border-osint-border space-y-6">
+<div class="flex items-center gap-4" id="llm-risk-block">
+<div class="w-16 h-16 rounded-full border-4 border-osint-danger/30 flex items-center justify-center relative">
+<svg class="absolute -rotate-90 w-full h-full">
+<circle cx="32" cy="32" fill="none" r="28" stroke="#ff4444" stroke-dasharray="175" stroke-dashoffset="58" stroke-width="4" id="llm-risk-circle"></circle>
+</svg>
+<span class="text-lg font-black text-osint-danger" id="llm-risk-score">67</span>
+</div>
+<div>
+<p class="text-[11px] font-bold text-osint-muted uppercase tracking-widest">RISK SCORE</p>
+<h4 class="text-xl font-black text-osint-danger tracking-tighter uppercase" id="llm-risk-level">HIGH THREAT</h4>
+</div>
+</div>
+<div class="space-y-3">
+<h5 class="text-[10px] font-black text-osint-accent uppercase tracking-[0.15em]">KEY FINDINGS</h5>
+<div class="space-y-2" id="llm-findings">
+<div class="flex gap-3 items-start">
+<span class="text-[10px] font-bold text-osint-accent bg-osint-surface-2 border border-osint-accent w-5 h-5 flex items-center justify-center shrink-0">1</span>
+<p class="text-[12px] text-osint-text leading-tight">Confirmed credentials leaked via RaidForums; password reuse likely on financial assets.</p>
+</div>
+<div class="flex gap-3 items-start">
+<span class="text-[10px] font-bold text-osint-accent bg-osint-surface-2 border border-osint-accent w-5 h-5 flex items-center justify-center shrink-0">2</span>
+<p class="text-[12px] text-osint-text leading-tight">Spatial overlap between social media EXIF data and registered corporate address is 94%.</p>
+</div>
+<div class="flex gap-3 items-start">
+<span class="text-[10px] font-bold text-osint-accent bg-osint-surface-2 border border-osint-accent w-5 h-5 flex items-center justify-center shrink-0">3</span>
+<p class="text-[12px] text-osint-text leading-tight">Target maintains obscure dev profiles suggesting specialized knowledge in cryptography.</p>
+</div>
+<div class="flex gap-3 items-start">
+<span class="text-[10px] font-bold text-osint-accent bg-osint-surface-2 border border-osint-accent w-5 h-5 flex items-center justify-center shrink-0">4</span>
+<p class="text-[12px] text-osint-text leading-tight">Multiple shell domains connected to IP cluster 185.122.***.*** (High Suspicion).</p>
+</div>
+</div>
+</div>
+<div class="space-y-3 pt-2">
+<h5 class="text-[10px] font-black text-osint-muted uppercase tracking-[0.15em]">RECOMMENDATIONS</h5>
+<ul class="space-y-1.5 text-[11px] text-osint-muted" id="llm-recs">
+<li class="flex gap-2"><span>[•]</span> Immediate credential reset for linked corporate emails.</li>
+<li class="flex gap-2"><span>[•]</span> Monitor blockchain activity for linked wallet addresses.</li>
+<li class="flex gap-2"><span>[•]</span> Conduct social engineering vulnerability test on Tier-1 associates.</li>
+</ul>
+</div>
+</div>
+<!-- Right: AI Narrative -->
+<div class="lg:w-[60%] bg-osint-surface-2 p-6 flex flex-col justify-between">
+<div class="space-y-4">
+<div class="flex items-center gap-2 text-osint-accent">
+<span class="material-symbols-outlined text-[16px]" data-icon="auto_awesome">auto_awesome</span>
+<span class="text-[10px] font-bold uppercase tracking-widest">NARRATIVE SUMMARY</span>
+</div>
+<p class="text-[13px] leading-relaxed text-osint-text opacity-90 font-light" id="llm-narrative">
+                                Subject "John Doe" exhibits a sophisticated digital footprint characterized by high technical awareness but poor operational security regarding legacy data leaks. The correlation engine successfully bridged disparate identities across LinkedIn, GitHub, and several underground forum aliases. Most significant is the discovery of a high-risk data exposure in a 2024 credential dump, which directly links the subject's primary email to a specific infrastructure project currently under observation. 
+                                <br/><br/>
+                                Further analysis of EXIF metadata indicates consistent physical presence in the Beşiktaş district of İstanbul, aligning with corporate registration records. The AI identifies a deliberate attempt to obfuscate domain ownership through third-party proxy services, though DNS history reveals significant overlap with known gray-market infrastructure.
+                            </p>
+</div>
+<div class="mt-8 pt-4 border-t border-osint-border/50 flex justify-between items-center text-[10px] font-mono text-osint-muted uppercase tracking-widest">
+<div class="flex items-center gap-2" id="llm-meta">
+<span class="w-1.5 h-1.5 bg-osint-accent rounded-full"></span>
+                                [ analysis complete • 4.3s • tokens: 2,184 ]
+                            </div>
+<button class="hover:text-osint-accent transition-colors flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]" data-icon="download">download</span> EXPORT REPORT
+                            </button>
+</div>
+</div>
+</div>
+</section>
+</div>
+<!-- Footer Decoration -->
+<footer class="mt-auto p-6 flex justify-between items-center text-[9px] text-osint-muted/40 font-mono tracking-widest uppercase">
+<span>TERMINAL: ARGOS_X64_STABLE</span>
+<span>OSINT KERNEL 5.12.0-RECON</span>
+<span id="current-timestamp">2026-05-19 23:22:45 UTC</span>
+</footer>
+</main>
+<script>
+const BASE = "http://localhost:8000";
+const STORAGE_TARGET = "argos.target";
+function escapeHtml(s) {
+  if (s == null) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+const NAV_MAP = {
+  "overview": "/stitch/dashboard.html",
+  "phone lookup": "/stitch/profile.html#phone",
+  "dark web": "/stitch/profile.html#darkweb",
+  "domain search": "/stitch/profile.html#domain",
+  "email osint": "/stitch/profile.html#email",
+  "geo photo": "/stitch/profile.html#geo",
+  "face search": "/stitch/profile.html#face",
+  "correlation": "/stitch/correlation.html",
+  "llm analysis": "/stitch/llm_analysis.html",
+  "report": "/stitch/report.html",
+};
+
+function wireSidebar() {
+  document.querySelectorAll("aside a").forEach(a => {
+    const t = a.textContent.replace(/\s+/g, ' ').trim().toLowerCase();
+    for (const k in NAV_MAP) { if (t.includes(k)) { a.href = NAV_MAP[k]; break; } }
+  });
+}
+
+async function api(method, path, body) {
+  const opts = { method, headers: { Accept: "application/json" } };
+  if (body !== undefined) { opts.headers["Content-Type"] = "application/json"; opts.body = JSON.stringify(body); }
+  const r = await fetch(BASE + path, opts);
+  if (!r.ok) throw new Error(r.status);
+  return r.json();
+}
+
+const RISK_COLORS = { low: "#2ecc71", medium: "#ffaa00", high: "#ff8800", critical: "#ff4444" };
+
+function setRiskBadge(level) {
+  const badge = document.getElementById("prof-risk-badge");
+  const score = document.getElementById("llm-risk-level");
+  const c = RISK_COLORS[level] || "#ff4444";
+  if (badge) { badge.textContent = "RISK: " + level.toUpperCase(); badge.style.color = c; badge.style.borderColor = c; }
+  if (score) { score.textContent = level.toUpperCase() + " THREAT"; score.style.color = c; }
+  const rs = document.getElementById("llm-risk-score");
+  if (rs) rs.style.color = c;
+}
+
+function fillList(id, items) {
+  const el = document.getElementById(id);
+  if (!el) return;
+  el.innerHTML = items.map(t =>
+    '<div class="flex gap-3"><span class="text-[#2ecc71]">›</span><p class="text-[12px] text-[#e9fff6]">' + escapeHtml(t) + "</p></div>"
+  ).join("");
+}
+
+function err(msg) {
+  const el = document.getElementById("llm-narrative");
+  if (el) el.innerHTML = '<span style="color:#ff4444">[ ERR ] ' + escapeHtml(msg) + "</span>";
+}
+
+async function runAll(target) {
+  if (!target) return;
+  const btn = document.getElementById("btn-run-scan");
+  if (btn) { btn.disabled = true; btn.textContent = "RUNNING..."; }
+
+  // 1. Username bios → handles
+  try {
+    const isEmail = target.includes("@");
+    const param = isEmail ? "email=" + encodeURIComponent(target) : "username=" + encodeURIComponent(target);
+    const bios = await api("GET", "/username-bios?" + param);
+    const handles = document.getElementById("prof-handles");
+    if (handles && bios && bios.platforms) {
+      const parts = Object.keys(bios.platforms).map(p => '<span>' + escapeHtml(p) + ': ' + (bios.platforms[p] ? "✓" : "×") + '</span>');
+      handles.innerHTML = parts.join('<span class="text-osint-border"> • </span>');
+    }
+  } catch (_) {}
+
+  // 2. Scan full
+  let scanResult = {};
+  try {
+    const isEmail = target.includes("@");
+    const param = isEmail ? "email=" + encodeURIComponent(target) : "username=" + encodeURIComponent(target);
+    scanResult = await api("GET", "/scan/full?" + param);
+    const nm = document.getElementById("prof-name");
+    if (nm && scanResult.username) nm.textContent = scanResult.username.toUpperCase();
+    const mc = document.getElementById("prof-modules-count");
+    if (mc) { const n = Object.keys(scanResult).length; mc.textContent = n + " / " + n; }
+  } catch (e) { err("scan/full: " + e.message); }
+
+  // 3. LLM analysis
+  try {
+    const llm = await api("POST", "/analysis/osint", { data: { target, scan_result: scanResult } });
+    if (llm.error) { err(llm.error); } else {
+      const score = typeof llm.score === "number" ? llm.score : 0;
+      const rs = document.getElementById("llm-risk-score");
+      if (rs) rs.textContent = score;
+      setRiskBadge(llm.risk_level || "medium");
+      fillList("llm-findings", llm.key_findings || []);
+      const recs = document.getElementById("llm-recs");
+      if (recs) recs.innerHTML = (llm.recommendations || []).map(r => '<li class="flex gap-2"><span>[•]</span>' + escapeHtml(r) + "</li>").join("");
+      const narr = document.getElementById("llm-narrative");
+      if (narr) narr.textContent = llm.summary || "";
+      const meta = document.getElementById("llm-meta");
+      if (meta) meta.innerHTML = '<span class="w-1.5 h-1.5 bg-osint-accent rounded-full"></span>[ analysis complete • tokens: ' + (llm.raw_prompt_tokens || 0) + " ]";
+    }
+  } catch (e) { err("analysis/osint: " + e.message); }
+
+  if (btn) { btn.disabled = false; btn.textContent = "RUN SCAN"; }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  wireSidebar();
+  setInterval(() => {
+    const el = document.getElementById("current-timestamp");
+    if (el) el.innerText = new Date().toISOString().replace("T", " ").substr(0, 19) + " UTC";
+  }, 1000);
+  const target = sessionStorage.getItem(STORAGE_TARGET) || "";
+  const nm = document.getElementById("prof-name");
+  if (nm && target) nm.textContent = target.toUpperCase();
+  const btn = document.getElementById("btn-run-scan");
+  if (btn) btn.addEventListener("click", () => runAll(sessionStorage.getItem(STORAGE_TARGET) || ""));
+  if (target) runAll(target);
+});
+      function toggleSidebar() {
+    var s = document.getElementById('sidebar');
+    if (s) s.classList.toggle('sidebar-open');
+  }</script>
+<script>
+(function() {
+  function _scoreClass(s) {
+    return s > 0.8 ? 'high' : s >= 0.5 ? 'medium' : 'low';
+  }
+  function injectConfidenceBars(graph) {
+    if (!graph || !graph.findings) return;
+    Object.entries(graph.findings).forEach(function(entry) {
+      var fid = entry[0]; var finding = entry[1];
+      var card = document.querySelector('[data-finding-id="' + fid + '"]');
+      if (!card) return;
+      var pct = Math.round(finding.confidence_score * 100);
+      var cls = _scoreClass(finding.confidence_score);
+      var bar = document.createElement('div');
+      bar.className = 'confidence-bar';
+      bar.title = 'Kaynak sayisi: ' + ((finding.sources || []).length);
+      bar.innerHTML = '<div class="confidence-bar__track">' +
+        '<div class="confidence-bar__fill confidence-bar__fill--' + cls + '" style="width:' + pct + '%"></div>' +
+        '</div><span class="confidence-bar__score">' + pct + '%</span>';
+      card.appendChild(bar);
+    });
+  }
+  window.injectConfidenceBars = injectConfidenceBars;
+})();
+</script>
+</body></html>

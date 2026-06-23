@@ -1,0 +1,565 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ARGOS — Watchlist Intelligence</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bg": "#0a0e0b",
+                        "surface": "#0f1712",
+                        "surface-2": "#0a130f",
+                        "accent": "#2ecc71",
+                        "accent-bright": "#00f08a",
+                        "text-primary": "#e9fff6",
+                        "text-secondary": "#7ddfb2",
+                        "danger": "#ff4444",
+                        "warning": "#ffaa00",
+                        "border": "#1b2a20",
+                    },
+                    borderRadius: {
+                        "DEFAULT": "4px",
+                        "lg": "4px",
+                        "xl": "8px",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["JetBrains Mono", "monospace"],
+                        "display": ["JetBrains Mono", "monospace"],
+                        "body": ["JetBrains Mono", "monospace"],
+                        "label": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0a0e0b;
+            font-family: 'JetBrains Mono', monospace;
+            color: #e9fff6;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 99;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(46, 204, 113, 0.02) 50%, rgba(0, 0, 0, 0) 100%);
+            opacity: 0.1;
+            position: absolute;
+            bottom: 100%;
+            animation: scanline 10s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { bottom: 100%; }
+            100% { bottom: -100px; }
+        }
+
+        .glow-green {
+            box-shadow: 0 0 12px rgba(46, 204, 113, 0.25);
+        }
+        .glow-danger {
+            box-shadow: 0 0 12px rgba(255, 68, 68, 0.25);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0a0e0b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1b2a20;
+            border-radius: 2px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #2ecc71;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-bg text-text-primary selection:bg-accent selection:text-bg">
+    <div class="scanline pointer-events-none"></div>
+
+    <!-- Disabled Banner -->
+    <div id="disabled-banner" class="hidden absolute inset-0 z-[100] flex flex-col items-center justify-center bg-bg/90 backdrop-blur-md">
+        <div class="border border-danger p-8 max-w-lg text-center bg-[#1a0c0c] glow-danger rounded-xl">
+            <span class="material-symbols-outlined text-danger text-6xl mb-4 animate-pulse">warning</span>
+            <h2 class="text-2xl font-black text-danger tracking-wider uppercase mb-2">Watchlist Module Disabled</h2>
+            <p class="text-text-secondary text-sm mb-6 font-semibold">
+                Watchlist monitoring is currently offline because <code class="bg-[#2a0e0e] px-2 py-1 rounded text-danger">WATCHLIST_ENABLED=false</code> is set in the system configuration.
+            </p>
+            <div class="text-[10px] text-danger/60 tracking-widest font-bold uppercase">
+                SYSTEM DEACTIVATED // ADMIN INTERVENTION REQUIRED
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="fixed left-0 top-0 h-full flex flex-col w-[240px] border-r border-[#1b2a20] bg-[#0a0e0b] z-50" id="sidebar">
+        <!-- Logo Section -->
+        <div class="p-6 flex flex-col gap-1">
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-[#2ecc71] animate-pulse shadow-[0_0_8px_#2ecc71]"></div>
+                <h1 class="text-xl font-bold text-[#2ecc71] tracking-[0.2em] font-['JetBrains_Mono'] uppercase">ARGOS</h1>
+            </div>
+            <div class="text-[10px] tracking-[0.4em] text-[#7ddfb2] opacity-60 ml-5">OSINT // SYSTEM ACTIVE</div>
+        </div>
+        <!-- Modules Section -->
+        <div class="px-6 py-2">
+            <span class="text-[10px] text-[#7ddfb2] opacity-40 font-bold tracking-[0.2em]">MODULES</span>
+        </div>
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto custom-scrollbar px-2 py-2">
+            <div class="space-y-1">
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/dashboard.html">
+                    <span class="material-symbols-outlined text-[18px]">dashboard</span>
+                    Overview
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/profile.html#phone">
+                    <span class="material-symbols-outlined text-[18px]">phone_iphone</span>
+                    Phone Lookup
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/profile.html#darkweb">
+                    <span class="material-symbols-outlined text-[18px]">security</span>
+                    Dark Web
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/profile.html#domain">
+                    <span class="material-symbols-outlined text-[18px]">language</span>
+                    Domain Search
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/profile.html#email">
+                    <span class="material-symbols-outlined text-[18px]">alternate_email</span>
+                    Email OSINT
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/profile.html#geo">
+                    <span class="material-symbols-outlined text-[18px]">location_on</span>
+                    Geo Photo
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/profile.html#face">
+                    <span class="material-symbols-outlined text-[18px]">face</span>
+                    Face Search
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/correlation.html">
+                    <span class="material-symbols-outlined text-[18px]">link</span>
+                    Correlation
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/llm_analysis.html">
+                    <span class="material-symbols-outlined text-[18px]">psychology</span>
+                    LLM Analysis
+                </a>
+                <!-- Active Watchlist Link with Badge -->
+                <a class="text-[#00f08a] bg-[#0f1712] border-l-2 border-[#2ecc71] font-bold p-4 flex items-center justify-between transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px]" href="/stitch/watchlist.html">
+                    <div class="flex items-center gap-3">
+                        <span class="material-symbols-outlined text-[18px]">visibility</span>
+                        Watchlist
+                    </div>
+                    <span id="watchlist-badge" class="hidden bg-danger text-bg text-[9px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">0</span>
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/report.html">
+                    <span class="material-symbols-outlined text-[18px]">description</span>
+                    Report
+                </a>
+            </div>
+        </nav>
+        <!-- Footer -->
+        <div class="p-4 border-t border-[#1b2a20] space-y-4">
+            <div class="flex justify-between items-center text-[9px] text-[#7ddfb2] opacity-50 uppercase tracking-widest">
+                <span>V4.0 STABLE</span>
+                <span>ENC: AES-256</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="ml-[240px] flex-1 flex flex-col h-screen overflow-hidden bg-bg">
+        <!-- Top Nav Bar -->
+        <header class="h-16 border-b border-border flex justify-between items-center px-8 bg-surface/50 backdrop-blur-sm shrink-0">
+            <div class="flex items-center gap-4">
+                <span class="text-xs text-[#2ecc71] tracking-[0.3em] uppercase">SYSTEM // WATCHLIST</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-[#2ecc71] animate-ping"></div>
+                <span class="text-[11px] text-[#7ddfb2] font-semibold tracking-wider">SECURE SESSION</span>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Grid -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-8">
+            <!-- Alert Center Badge Panel -->
+            <div id="alert-banner-panel" class="hidden bg-danger/10 border border-danger/30 p-4 flex items-center justify-between rounded">
+                <div class="flex items-center gap-3 text-danger">
+                    <span class="material-symbols-outlined">notifications_active</span>
+                    <span class="text-xs font-bold uppercase tracking-widest">Recent Alerts Active</span>
+                </div>
+                <span id="alerts-panel-count" class="bg-danger text-bg text-[10px] font-black px-2 py-0.5 rounded">0 ALERTS</span>
+            </div>
+
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Left panel: Target Management List (2 columns wide) -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="border border-border bg-surface p-6 rounded relative overflow-hidden">
+                        <div class="absolute left-0 top-0 h-full w-1 bg-accent"></div>
+                        <h2 class="text-sm font-bold text-accent tracking-[0.25em] uppercase mb-6 flex items-center justify-between">
+                            <span>Watchlist Targets</span>
+                            <span class="text-[10px] text-text-secondary opacity-60">ACTIVE MONITORING</span>
+                        </h2>
+                        
+                        <div class="overflow-x-auto custom-scrollbar">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="border-b border-border text-text-secondary opacity-80 uppercase tracking-wider">
+                                        <th class="py-3 px-4 font-bold">Type</th>
+                                        <th class="py-3 px-4 font-bold">Value</th>
+                                        <th class="py-3 px-4 font-bold">Description</th>
+                                        <th class="py-3 px-4 font-bold">Status</th>
+                                        <th class="py-3 px-4 font-bold">Last Run</th>
+                                        <th class="py-3 px-4 font-bold text-right">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="targets-list" class="divide-y divide-border/30">
+                                    <!-- Targets will be inserted dynamically -->
+                                    <tr>
+                                        <td colspan="6" class="py-8 text-center text-text-secondary opacity-60">Loading targets...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Target History -->
+                    <div class="border border-border bg-surface p-6 rounded relative overflow-hidden">
+                        <div class="absolute left-0 top-0 h-full w-1 bg-text-secondary"></div>
+                        <h2 class="text-sm font-bold text-text-secondary tracking-[0.25em] uppercase mb-6 flex items-center justify-between">
+                            <span>Scan & Activity History</span>
+                            <span class="text-[10px] text-text-secondary opacity-60">SYSTEM CHANGE LOG</span>
+                        </h2>
+                        <div class="overflow-x-auto custom-scrollbar max-h-72">
+                            <table class="w-full text-left border-collapse text-xs">
+                                <thead>
+                                    <tr class="border-b border-border text-text-secondary opacity-80 uppercase tracking-wider">
+                                        <th class="py-3 px-4 font-bold">Timestamp</th>
+                                        <th class="py-3 px-4 font-bold">Target</th>
+                                        <th class="py-3 px-4 font-bold">Change</th>
+                                        <th class="py-3 px-4 font-bold">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-list" class="divide-y divide-border/30">
+                                    <tr>
+                                        <td colspan="4" class="py-8 text-center text-text-secondary opacity-60">Select a target or load history...</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right panel: Add target form & Alerts history -->
+                <div class="space-y-6">
+                    <!-- Add Target Panel -->
+                    <div class="border border-border bg-surface p-6 rounded relative overflow-hidden">
+                        <div class="absolute left-0 top-0 h-full w-1 bg-accent"></div>
+                        <h2 class="text-sm font-bold text-accent tracking-[0.25em] uppercase mb-6">Add New Target</h2>
+                        <form id="add-target-form" class="space-y-4">
+                            <div>
+                                <label class="block text-[10px] text-text-secondary uppercase font-bold tracking-widest mb-1.5">Target Type</label>
+                                <select id="target-type" class="w-full bg-bg border border-border rounded text-text-primary px-3 py-2 text-xs focus:border-accent focus:ring-0 focus:outline-none uppercase font-semibold">
+                                    <option value="email">Email Address</option>
+                                    <option value="username">Username</option>
+                                    <option value="domain">Domain Name</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-text-secondary uppercase font-bold tracking-widest mb-1.5">Target Value</label>
+                                <input type="text" id="target-value" placeholder="e.g. user@domain.com or john_doe" required class="w-full bg-bg border border-border rounded text-text-primary px-3 py-2 text-xs focus:border-accent focus:ring-0 focus:outline-none font-semibold"/>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] text-text-secondary uppercase font-bold tracking-widest mb-1.5">Description</label>
+                                <input type="text" id="target-desc" placeholder="e.g. CEO's personal email" class="w-full bg-bg border border-border rounded text-text-primary px-3 py-2 text-xs focus:border-accent focus:ring-0 focus:outline-none font-semibold"/>
+                            </div>
+                            <button type="submit" class="w-full bg-accent text-bg font-black py-2.5 rounded text-[11px] tracking-widest hover:bg-accent-bright transition-all glow-green uppercase">
+                                Add Target
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Alerts Log Panel -->
+                    <div class="border border-border bg-surface p-6 rounded relative overflow-hidden flex flex-col h-[340px]">
+                        <div class="absolute left-0 top-0 h-full w-1 bg-danger"></div>
+                        <h2 class="text-sm font-bold text-danger tracking-[0.25em] uppercase mb-6 flex justify-between items-center shrink-0">
+                            <span>Watchlist Alerts</span>
+                            <span class="text-[9px] bg-danger/20 text-danger px-2 py-0.5 rounded font-black">LOG</span>
+                        </h2>
+                        <div id="alerts-log" class="flex-1 overflow-y-auto custom-scrollbar space-y-3 pr-1">
+                            <!-- Alerts will be inserted dynamically -->
+                            <div class="text-center py-8 text-text-secondary opacity-60 text-xs">No alerts recorded.</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        const BASE = "http://localhost:8000";
+
+        function escapeHtml(s) {
+            if (s == null) return "";
+            return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+        }
+
+        async function api(method, path, body) {
+            const opts = { method, headers: { "Accept": "application/json" } };
+            if (body !== undefined) {
+                opts.headers["Content-Type"] = "application/json";
+                opts.body = JSON.stringify(body);
+            }
+            const r = await fetch(BASE + path, opts);
+            if (!r.ok) {
+                throw new Error(r.status + " " + r.statusText);
+            }
+            return r.json();
+        }
+
+        // Global store for targets
+        let targets = [];
+
+        async function loadWatchlist() {
+            try {
+                const res = await api("GET", "/watchlist/targets");
+                
+                // If WATCHLIST_ENABLED=false, the route returns {"enabled": false}
+                if (res && res.enabled === false) {
+                    document.getElementById("disabled-banner").classList.remove("hidden");
+                    return;
+                }
+
+                targets = Array.isArray(res) ? res : [];
+                renderTargets();
+                loadAllHistory();
+                loadAlerts();
+            } catch (e) {
+                console.error("Failed to load targets", e);
+                // Treat as disabled or server offline
+                document.getElementById("disabled-banner").classList.remove("hidden");
+            }
+        }
+
+        function renderTargets() {
+            const tbody = document.getElementById("targets-list");
+            if (targets.length === 0) {
+                tbody.innerHTML = `<tr><td colspan="6" class="py-8 text-center text-text-secondary opacity-60">No targets being monitored yet. Add one on the right!</td></tr>`;
+                return;
+            }
+
+            tbody.innerHTML = targets.map(target => {
+                const lastRunText = target.last_run ? new Date(target.last_run).toLocaleString("en-GB") : "Never";
+                const isPaused = target.status === "paused";
+                const statusColor = isPaused ? "text-warning" : "text-accent";
+                
+                return `
+                    <tr class="hover:bg-[#1b2a20]/20 transition-colors border-b border-border/10">
+                        <td class="py-3 px-4 font-bold text-accent uppercase text-[10px]">${escapeHtml(target.type)}</td>
+                        <td class="py-3 px-4 font-semibold text-text-primary select-all">${escapeHtml(target.value)}</td>
+                        <td class="py-3 px-4 text-text-secondary opacity-80 max-w-[150px] truncate" title="${escapeHtml(target.description)}">${escapeHtml(target.description || '-')}</td>
+                        <td class="py-3 px-4 font-bold ${statusColor} text-[10px] uppercase">${escapeHtml(target.status)}</td>
+                        <td class="py-3 px-4 text-text-secondary">${escapeHtml(lastRunText)}</td>
+                        <td class="py-3 px-4 text-right">
+                            <div class="flex justify-end gap-2">
+                                <button onclick="runNow(${target.id})" class="px-2.5 py-1 text-[10px] font-bold bg-[#1b2a20] text-accent border border-accent/20 rounded hover:bg-accent hover:text-bg transition-all uppercase">Run</button>
+                                <button onclick="deleteTarget(${target.id})" class="px-2.5 py-1 text-[10px] font-bold bg-[#1b0c0c] text-danger border border-danger/20 rounded hover:bg-danger hover:text-bg transition-all uppercase">Delete</button>
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            }).join('');
+        }
+
+        async function addTarget(e) {
+            e.preventDefault();
+            const type = document.getElementById("target-type").value;
+            const value = document.getElementById("target-value").value.trim();
+            const description = document.getElementById("target-desc").value.trim();
+
+            if (!value) return;
+
+            try {
+                const newTarget = await api("POST", "/watchlist/targets", { type, value, description, status: "active" });
+                if (newTarget.enabled === false) {
+                    alert("Watchlist is disabled!");
+                    return;
+                }
+                
+                // Reset form
+                document.getElementById("target-value").value = "";
+                document.getElementById("target-desc").value = "";
+
+                // Reload data
+                await loadWatchlist();
+            } catch (e) {
+                alert("Error adding target: " + e.message);
+            }
+        }
+
+        async function deleteTarget(id) {
+            if (!confirm("Are you sure you want to remove this target from watchlist?")) return;
+            try {
+                const res = await api("DELETE", `/watchlist/targets/${id}`);
+                if (res.enabled === false) return;
+                await loadWatchlist();
+            } catch (e) {
+                alert("Error deleting target: " + e.message);
+            }
+        }
+
+        async function runNow(id) {
+            try {
+                const res = await api("POST", `/watchlist/targets/${id}/run-now`);
+                if (res.enabled === false) return;
+                
+                let msg = "Scan executed successfully.";
+                if (res.alerts_created > 0) {
+                    msg += ` Simulated alert created for target!`;
+                }
+                alert(msg);
+                await loadWatchlist();
+            } catch (e) {
+                alert("Error running scan: " + e.message);
+            }
+        }
+
+        async function loadAllHistory() {
+            const historyBody = document.getElementById("history-list");
+            if (targets.length === 0) {
+                historyBody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-text-secondary opacity-60">No history available.</td></tr>`;
+                return;
+            }
+
+            try {
+                // Fetch history for each target and combine
+                let allHistory = [];
+                for (const t of targets) {
+                    const h = await api("GET", `/watchlist/targets/${t.id}/history`);
+                    if (Array.isArray(h)) {
+                        h.forEach(item => {
+                            item.targetValue = t.value;
+                            allHistory.push(item);
+                        });
+                    }
+                }
+
+                // Sort by timestamp desc
+                allHistory.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+                if (allHistory.length === 0) {
+                    historyBody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-text-secondary opacity-60">No scan runs or edits recorded yet.</td></tr>`;
+                    return;
+                }
+
+                historyBody.innerHTML = allHistory.map(h => {
+                    const formattedTime = new Date(h.timestamp).toLocaleString("en-GB");
+                    let badgeColor = "text-text-secondary bg-[#1b2a20]/30";
+                    if (h.change_type === "created") badgeColor = "text-accent bg-accent/10 border border-accent/20";
+                    if (h.change_type === "scan_run") badgeColor = "text-[#00f08a] bg-[#00f08a]/10 border border-[#00f08a]/20";
+                    if (h.change_type === "updated") badgeColor = "text-warning bg-warning/10 border border-warning/20";
+
+                    return `
+                        <tr class="hover:bg-[#1b2a20]/10 transition-colors border-b border-border/10">
+                            <td class="py-3 px-4 text-text-secondary">${escapeHtml(formattedTime)}</td>
+                            <td class="py-3 px-4 font-semibold text-text-primary">${escapeHtml(h.targetValue)}</td>
+                            <td class="py-3 px-4">
+                                <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-wider ${badgeColor}">${escapeHtml(h.change_type)}</span>
+                            </td>
+                            <td class="py-3 px-4 text-text-secondary">${escapeHtml(h.description)}</td>
+                        </tr>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error("Failed to load history", e);
+                historyBody.innerHTML = `<tr><td colspan="4" class="py-8 text-center text-text-secondary text-danger">Error loading history logs.</td></tr>`;
+            }
+        }
+
+        async function loadAlerts() {
+            const alertsLog = document.getElementById("alerts-log");
+            const badge = document.getElementById("watchlist-badge");
+            const banner = document.getElementById("alert-banner-panel");
+            const bannerCount = document.getElementById("alerts-panel-count");
+
+            try {
+                const alerts = await api("GET", "/watchlist/alerts");
+                if (alerts.enabled === false) return;
+
+                if (!Array.isArray(alerts) || alerts.length === 0) {
+                    alertsLog.innerHTML = `<div class="text-center py-8 text-text-secondary opacity-60 text-xs">No alerts recorded.</div>`;
+                    badge.classList.add("hidden");
+                    banner.classList.add("hidden");
+                    return;
+                }
+
+                // Render Badge Count
+                const unreadCount = alerts.filter(a => !a.is_read).length;
+                if (unreadCount > 0) {
+                    badge.textContent = unreadCount;
+                    badge.classList.remove("hidden");
+                    bannerCount.textContent = `${unreadCount} UNREAD ALERTS`;
+                    banner.classList.remove("hidden");
+                } else {
+                    badge.classList.add("hidden");
+                    banner.classList.add("hidden");
+                }
+
+                // Render Alerts list
+                alertsLog.innerHTML = alerts.map(a => {
+                    const formattedTime = new Date(a.timestamp).toLocaleTimeString("en-GB", { hour12: false });
+                    
+                    let sevColor = "text-text-secondary border-text-secondary/20 bg-text-secondary/10";
+                    if (a.severity === "medium") sevColor = "text-warning border-warning/20 bg-warning/10";
+                    if (a.severity === "high") sevColor = "text-danger border-danger/20 bg-danger/10";
+                    if (a.severity === "critical") sevColor = "text-danger border-danger bg-danger/20 font-black animate-pulse";
+
+                    // Map target value back if possible
+                    const t = targets.find(target => target.id === a.target_id);
+                    const targetVal = t ? t.value : `Target #${a.target_id}`;
+
+                    return `
+                        <div class="border border-border bg-surface-2 p-3 rounded space-y-1 text-xs">
+                            <div class="flex justify-between items-center">
+                                <span class="font-bold text-text-primary text-[10px]">${escapeHtml(targetVal)}</span>
+                                <span class="text-[9px] text-text-secondary opacity-60">${escapeHtml(formattedTime)}</span>
+                            </div>
+                            <div class="font-bold text-text-primary">${escapeHtml(a.title)}</div>
+                            <div class="text-text-secondary opacity-90 text-[11px]">${escapeHtml(a.message)}</div>
+                            <div class="flex justify-between items-center pt-1.5">
+                                <span class="px-2 py-0.5 border rounded text-[8px] uppercase tracking-widest ${sevColor}">${escapeHtml(a.severity)}</span>
+                                ${!a.is_read ? `<span class="w-1.5 h-1.5 rounded-full bg-danger"></span>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+            } catch (e) {
+                console.error("Failed to load alerts", e);
+                alertsLog.innerHTML = `<div class="text-center py-8 text-danger text-xs">Error loading alerts.</div>`;
+            }
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            loadWatchlist();
+            document.getElementById("add-target-form").addEventListener("submit", addTarget);
+            
+            // Poll for alerts every 30 seconds
+            setInterval(loadAlerts, 30000);
+        });
+    </script>
+</body>
+</html>

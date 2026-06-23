@@ -1,0 +1,1440 @@
+<!doctype html>
+<html lang="tr"><head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>ARGOS // BIO &amp; OSINT</title>
+<style>
+:root{
+  --bg:#0b0f0c;--surface:#0f1712;--surface2:#0a130f;
+  --accent:#00f08a;--accent-dim:#00c070;--muted:#7ddfb2;
+  --text:#e9fff6;--text-dim:#8aaa98;--border:#1b2a20;
+  --error:#ffa3a3;--warning:#f0c040;
+  --radius-card:14px;--radius-input:10px
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);color:var(--text);font:14px/1.5 ui-monospace,'Cascadia Code',Consolas,monospace;display:flex;flex-direction:column;height:100vh;overflow:hidden}
+.header{display:flex;align-items:center;gap:16px;padding:10px 20px;border-bottom:1px solid var(--border);background:var(--surface)}
+.header h1{color:var(--accent);font-size:15px;font-weight:800;letter-spacing:2px;text-shadow:0 0 12px rgba(0,240,138,.3);white-space:nowrap}
+.header input{background:#0b1410;border:1px solid var(--border);color:var(--accent);padding:6px 10px;border-radius:var(--radius-input);font:inherit;font-size:12px;width:280px}
+.layout{display:flex;flex:1;overflow:hidden}
+.sidebar{width:220px;min-width:220px;background:var(--surface);border-right:1px solid var(--border);overflow-y:auto;padding:10px 8px}
+.sidebar button{display:flex;align-items:center;gap:8px;width:100%;padding:9px 12px;border:none;border-radius:var(--radius-input);background:transparent;color:var(--text-dim);font:inherit;font-size:12px;cursor:pointer;text-align:left;transition:background .15s}
+.sidebar button:hover{background:#1a2e22;color:var(--text)}
+.sidebar button.active{background:var(--accent);color:#012016;font-weight:700}
+.sidebar button .icon{font-size:14px;width:20px;text-align:center}
+.main{flex:1;overflow-y:auto;padding:24px}
+.card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius-card);padding:20px;box-shadow:0 8px 24px #00000060;display:none}
+.card.active{display:block}
+.card h2{color:var(--accent);font-size:16px;font-weight:700;margin-bottom:14px;text-shadow:0 0 8px rgba(0,240,138,.2)}
+.row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-bottom:12px}
+input,select,textarea{background:#0b1410;border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:var(--radius-input);font:inherit;font-size:13px;min-width:200px}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);outline:none}
+input[type=file]{padding:7px;min-width:auto}
+input[type=checkbox]{min-width:auto;width:16px;height:16px;accent-color:var(--accent)}
+.btn{background:linear-gradient(180deg,#13ff9f,#00d67e);color:#012016;font-weight:700;border:none;padding:9px 18px;border-radius:var(--radius-input);cursor:pointer;font:inherit;font-size:13px}
+.btn:hover{filter:brightness(1.1)}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.btn2{background:#1a2e22;color:var(--muted);border:1px solid var(--border);padding:9px 14px;border-radius:var(--radius-input);cursor:pointer;font:inherit;font-size:13px}
+.btn2:hover{background:#233e31}
+.pre{background:#07100d;border:1px solid #153222;border-radius:10px;padding:12px;font-size:12px;max-height:400px;overflow:auto;white-space:pre-wrap;word-break:break-word;color:var(--muted);margin-top:10px}
+.msg{font-size:12px;margin-left:6px}
+.msg.ok{color:var(--accent)}
+.msg.err{color:var(--error)}
+.badge{display:inline-block;background:var(--surface2);border:1px solid #183526;border-radius:999px;padding:4px 10px;font-size:12px;color:var(--muted)}
+label{font-size:12px;color:var(--text-dim);display:flex;align-items:center;gap:4px}
+
+/* ─── Özet Kart Sistemi ─── */
+.summary{margin-top:14px;padding:14px 16px;border-radius:12px;background:linear-gradient(135deg,#0d1916,#0a130f);border:1px solid #1d3328;display:none;animation:fadeIn .25s}
+.summary.show{display:block}
+.summary-empty{color:var(--text-dim);font-style:italic;text-align:center;padding:14px;font-size:13px}
+.s-line{display:flex;align-items:flex-start;gap:10px;padding:6px 0;font-size:13px;line-height:1.55}
+.s-line .ic{font-size:16px;flex-shrink:0;width:22px;text-align:center}
+.s-line .lbl{color:var(--text-dim);font-size:12px;min-width:96px;flex-shrink:0;padding-top:2px}
+.s-line .val{color:var(--text);flex:1;word-break:break-word}
+.s-big{display:flex;align-items:center;gap:10px;font-size:15px;font-weight:600;padding:4px 0 10px;color:var(--text)}
+.s-big .ic{font-size:22px}
+.s-big b{color:var(--accent)}
+.s-section{padding:10px 0 4px;border-top:1px solid #16241c;margin-top:10px}
+.s-section-title{color:var(--text-dim);font-size:11px;margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px}
+.s-list{display:grid;gap:6px}
+.s-item{padding:9px 11px;background:rgba(255,255,255,.02);border-radius:8px;border-left:2px solid var(--accent-dim);font-size:12px;line-height:1.5}
+.b-ok{background:rgba(0,240,138,.13);color:var(--accent);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;display:inline-block}
+.b-err{background:rgba(255,163,163,.13);color:var(--error);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;display:inline-block}
+.b-warn{background:rgba(240,192,64,.13);color:var(--warning);padding:2px 8px;border-radius:6px;font-size:11px;font-weight:700;display:inline-block}
+.s-link{color:var(--accent);text-decoration:none}
+.s-link:hover{text-decoration:underline}
+@keyframes fadeIn{from{opacity:0;transform:translateY(-4px)}to{opacity:1;transform:none}}
+
+/* ─── Teknik Detaylar Toggle ─── */
+.tech{margin-top:12px}
+.tech>summary{cursor:pointer;color:var(--text-dim);font-size:11px;padding:6px 12px;background:#0a130f;border:1px solid var(--border);border-radius:8px;display:inline-block;user-select:none;transition:.15s;list-style:none}
+.tech>summary::-webkit-details-marker{display:none}
+.tech>summary::before{content:"▶ ";font-size:9px;color:var(--text-dim)}
+.tech[open]>summary::before{content:"▼ "}
+.tech>summary:hover{color:var(--accent);border-color:var(--accent)}
+.tech[open]>summary{color:var(--accent);border-color:var(--accent)}
+.tech .pre{margin-top:8px}
+
+/* Foto grid */
+.pho-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(120px,1fr));gap:8px;margin-top:10px}
+.pho-grid > div{border:1px solid var(--border);border-radius:10px;overflow:hidden}
+.pho-grid img{width:100%;height:100px;object-fit:cover;display:block}
+
+/* ─── Smart Bar (H5) ─── */
+#smart-bar{display:flex;align-items:center;gap:10px;padding:10px 20px;background:linear-gradient(135deg,#0d1916,#0a130f);border-bottom:1px solid var(--border);position:relative;z-index:5}
+#smart-bar input[type=text]{flex:1;min-width:0;background:#0b1410;border:1px solid var(--border);color:var(--text);padding:9px 12px;border-radius:var(--radius-input);font:inherit;font-size:13px}
+#smart-bar input[type=text]:focus{border-color:var(--accent);outline:none;box-shadow:0 0 0 2px rgba(0,240,138,.15)}
+#smart-bar .badge{font-size:11px;flex-shrink:0;min-width:130px;text-align:center}
+.sb-source-badge{font-size:10px;color:var(--accent);margin-left:6px;opacity:.8;background:rgba(0,240,138,.08);padding:1px 6px;border-radius:4px;border:1px solid rgba(0,240,138,.2)}
+
+/* ─── Smart Bar Modal ─── */
+#sb-modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,.72);z-index:999;align-items:center;justify-content:center;backdrop-filter:blur(2px)}
+#sb-modal.show{display:flex}
+.sb-modal-inner{background:var(--surface);border:1px solid var(--border);border-radius:14px;padding:24px;max-width:480px;width:90%;box-shadow:0 16px 48px rgba(0,0,0,.6)}
+.sb-modal-inner h3{color:var(--accent);margin-bottom:14px;font-size:15px}
+.sb-modal-inner .sb-modal-buttons{display:flex;gap:10px;flex-wrap:wrap;margin-top:12px}
+</style>
+</head><body>
+<div class="header">
+<h1>ARGOS // BIO &amp; OSINT</h1>
+<input id="base" value="" placeholder="Base URL"/>
+</div>
+<section id="smart-bar" aria-label="Akıllı arama çubuğu">
+  <span style="color:var(--accent);font-weight:700;font-size:11px;letter-spacing:1px;flex-shrink:0">SMART</span>
+  <input id="sb-text" type="text" placeholder="Email, telefon, domain, isim soyisim, kullanıcı adı veya görsel..." autocomplete="off"/>
+  <input id="sb-file" type="file" accept="image/*" style="display:none"/>
+  <button class="btn2" id="sb-file-btn" type="button" title="Görsel yükle">🖼</button>
+  <button class="btn" id="sb-go" type="button">Ara</button>
+  <span id="sb-indicator" class="badge" title="Tespit edilen tip">❓ tip bekleniyor</span>
+</section>
+<div class="layout">
+<nav class="sidebar">
+<button data-target="card-mosint" class="active"><span class="icon">📧</span>MOSINT</button>
+<button data-target="card-phone"><span class="icon">📱</span>Telefon OSINT</button>
+<button data-target="card-darkweb"><span class="icon">🔓</span>Dark Web</button>
+<button data-target="card-domain"><span class="icon">🌐</span>Domain Analizi</button>
+<button data-target="card-igbio"><span class="icon">📸</span>IG Bio</button>
+<button data-target="card-igp2"><span class="icon">📸</span>IG Profile v2</button>
+<button data-target="card-photos"><span class="icon">🖼</span>Photos</button>
+<button data-target="card-compare"><span class="icon">⚖</span>Compare IG vs X</button>
+<button data-target="card-huntx"><span class="icon">🔍</span>Hunt X by Name</button>
+<button data-target="card-exif"><span class="icon">🗂</span>EXIF</button>
+<button data-target="card-unified"><span class="icon">🔗</span>Unified Analysis</button>
+<button data-target="card-bios"><span class="icon">👤</span>Username Bios</button>
+<button data-target="card-face"><span class="icon">👁</span>Yuz Tanima</button>
+<button data-target="card-geo"><span class="icon">🗺</span>Geo Photo</button>
+<button data-target="card-report"><span class="icon">📄</span>PDF Rapor</button>
+<button data-target="card-temporal"><span class="icon">⏱</span>Temporal Intel</button>
+<button data-target="card-pivot"><span class="icon">🔀</span>Autonomous Pivot</button>
+</nav>
+<main class="main">
+
+<div class="card active" id="card-mosint"><h2>MOSINT (Email Intel)</h2>
+<div class="row"><input id="ms-email" type="email" placeholder="email@example.com"/><label><input type="checkbox" id="ms-smtp"/>SMTP</label><label><input type="checkbox" id="ms-deep"/>Deep</label><button class="btn" id="ms-btn">Analiz Et</button><span class="msg" id="ms-msg"></span></div>
+<div class="summary" id="ms-summary"></div>
+<details class="tech" id="ms-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="ms-json"></pre></details></div>
+
+<div class="card" id="card-phone"><h2>Telefon OSINT</h2>
+<div class="row"><input id="phone-num" placeholder="+905xxxxxxxxx"/><button class="btn" id="phone-btn">Sorgula</button><span class="msg" id="phone-msg"></span></div>
+<div class="summary" id="phone-summary"></div>
+<details class="tech" id="phone-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="phone-json"></pre></details></div>
+
+<div class="card" id="card-darkweb"><h2>Dark Web Kontrolu</h2>
+<div class="row"><input id="dw-q" placeholder="email veya kullanici adi"/><select id="dw-type"><option value="auto">Otomatik</option><option value="email">Email</option><option value="username">Username</option></select><button class="btn" id="dw-btn">Sorgula</button><span class="msg" id="dw-msg"></span></div>
+<div class="summary" id="dw-summary"></div>
+<details class="tech" id="dw-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="dw-json"></pre></details></div>
+
+<div class="card" id="card-domain"><h2>Domain Analizi</h2>
+<div class="row"><input id="dm-target" placeholder="google.com"/><button class="btn" id="dm-btn">Analiz Et</button><span class="msg" id="dm-msg"></span></div>
+<div class="summary" id="dm-summary"></div>
+<details class="tech" id="dm-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="dm-json"></pre></details></div>
+
+<div class="card" id="card-igbio"><h2>IG Bio</h2>
+<div class="row"><input id="igbio-user" placeholder="kullanici adi"/><button class="btn" id="igbio-btn">Getir</button><span class="msg" id="igbio-msg"></span></div>
+<div class="summary" id="igbio-summary"></div>
+<details class="tech" id="igbio-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="igbio-json"></pre></details></div>
+
+<div class="card" id="card-igp2"><h2>IG Profile v2</h2>
+<div class="row"><input id="igp2-user" placeholder="kullanici adi"/><button class="btn" id="igp2-btn">Getir</button><span class="msg" id="igp2-msg"></span></div>
+<div class="summary" id="igp2-summary"></div>
+<details class="tech" id="igp2-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="igp2-json"></pre></details></div>
+
+<div class="card" id="card-photos"><h2>Photos (IG / X / FB)</h2>
+<div class="row"><input id="pho-user" placeholder="kullanici adi"/><input id="pho-limit" type="number" value="6" min="1" max="24" style="width:80px;min-width:auto"/><button class="btn" id="pho-btn">Getir</button><span class="msg" id="pho-msg"></span></div>
+<div class="summary" id="pho-summary"></div>
+<div class="pho-grid" id="pho-grid"></div>
+<details class="tech" id="pho-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="pho-json"></pre></details></div>
+
+<div class="card" id="card-compare"><h2>Compare IG vs X (v2)</h2>
+<div class="row"><input id="cmp-user" placeholder="kullanici adi"/><input id="cmp-hint" placeholder="display name (opsiyonel)"/><button class="btn" id="cmp-btn">Karsilastir</button><span class="msg" id="cmp-msg"></span></div>
+<div class="summary" id="cmp-summary"></div>
+<details class="tech" id="cmp-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="cmp-json"></pre></details></div>
+
+<div class="card" id="card-huntx"><h2>Hunt X by Name</h2>
+<div class="row"><input id="hunt-name" placeholder="Tam isim"/><input id="hunt-kw" placeholder="keywords (virgul ile)"/><input id="hunt-limit" type="number" value="30" style="width:70px;min-width:auto"/><button class="btn" id="hunt-btn">Ara</button><span class="msg" id="hunt-msg"></span></div>
+<div class="summary" id="hunt-summary"></div>
+<details class="tech" id="hunt-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="hunt-json"></pre></details></div>
+
+<div class="card" id="card-exif"><h2>EXIF / Metadata</h2>
+<div class="row"><input id="exif-file" type="file" accept="image/*"/><button class="btn" id="exif-btn">Analiz Et</button><button class="btn2" id="exif-clear">Temizle</button><span class="msg" id="exif-msg"></span></div>
+<div class="summary" id="exif-summary"></div>
+<details class="tech" id="exif-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="exif-json"></pre></details></div>
+
+<div class="card" id="card-unified"><h2>Unified Profile Analysis</h2>
+<div class="row">
+  <input id="uni-fname" placeholder="Ad" style="min-width:140px"/>
+  <input id="uni-lname" placeholder="Soyad" style="min-width:140px"/>
+  <input id="uni-city" placeholder="Şehir (opsiyonel)" style="min-width:160px"/>
+</div>
+<div class="row">
+  <input id="uni-emails" placeholder="email1@x.com, email2@x.com" style="min-width:240px;flex:1"/>
+  <input id="uni-phones" placeholder="+90555..., +90555..." style="min-width:200px"/>
+  <input id="uni-usernames" placeholder="user1, user2" style="min-width:200px"/>
+</div>
+<div class="row">
+  <label><input type="checkbox" id="uni-fast" checked/>Hızlı mod</label>
+  <button class="btn" id="uni-btn">Çalıştır</button>
+  <span class="msg" id="uni-msg"></span>
+</div>
+<div class="summary" id="uni-summary"></div>
+<details class="tech" id="uni-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="uni-json"></pre></details></div>
+
+<div class="card" id="card-bios"><h2>Username Bios</h2>
+<div class="row"><input id="bios-user" placeholder="kullanici adi"/><input id="bios-only" placeholder="filtre (opsiyonel)"/><button class="btn" id="bios-btn">Getir</button><span class="msg" id="bios-msg"></span></div>
+<div class="summary" id="bios-summary"></div>
+<details class="tech" id="bios-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="bios-json"></pre></details></div>
+
+<div class="card" id="card-face"><h2>Yuz Tanima (Ters Arama)</h2>
+<div class="row"><input id="face-file" type="file" accept="image/jpeg,image/png,image/webp"/><label><input type="checkbox" id="face-saucenao" checked/>SauceNAO</label><label><input type="checkbox" id="face-yandex"/>Yandex</label><label><input type="checkbox" id="face-gv" checked/>Google Vision</label><button class="btn" id="face-btn">Ara</button><button class="btn2" id="face-clear">Temizle</button><span class="msg" id="face-msg"></span></div>
+<div class="summary" id="face-summary"></div>
+<details class="tech" id="face-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="face-json"></pre></details></div>
+
+<div class="card" id="card-geo"><h2>Geo Photo Analysis</h2>
+<div class="row"><input id="geo-file" type="file" accept="image/*"/><input id="geo-ts" placeholder="timestamp (opsiyonel)"/><button class="btn" id="geo-btn">Analiz Et</button><span class="msg" id="geo-msg"></span></div>
+<div class="summary" id="geo-summary"></div>
+<details class="tech" id="geo-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="geo-json"></pre></details></div>
+
+<div class="card" id="card-report"><h2>PDF Rapor Indir</h2>
+<p style="color:var(--text-dim);font-size:12px;margin-bottom:12px">Tum sonuclari tek PDF'e aktar. En az bir alan doldur.</p>
+<div class="row"><input id="rp-email" type="email" placeholder="Email (opsiyonel)"/><input id="rp-username" placeholder="Username (opsiyonel)"/><input id="rp-phone" placeholder="Telefon (opsiyonel)"/><button class="btn" id="rp-btn">PDF Indir</button><span class="msg" id="rp-msg"></span></div></div>
+
+<div class="card" id="card-temporal"><h2>⏱ Temporal Intelligence</h2>
+<div class="row">
+  <input id="ti-seed" placeholder="seed_key (örn: email:test@x.com)" style="min-width:280px"/>
+  <label><input type="checkbox" id="ti-narrative"/>Narrative (LLM)</label>
+  <button class="btn" id="ti-btn">Analiz Et</button>
+  <span class="msg" id="ti-msg"></span>
+</div>
+<div class="summary" id="ti-summary"></div>
+<details class="tech" id="ti-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="ti-json"></pre></details></div>
+
+<div class="card" id="card-pivot"><h2>🔀 Autonomous Pivot</h2>
+<div class="row">
+  <input id="pv-fid" placeholder="seed_finding_id (örn: email:x@x.com)" style="min-width:240px"/>
+  <input id="pv-seed" placeholder="seed_key (örn: x@x.com)" style="min-width:180px"/>
+  <select id="pv-depth" style="min-width:auto;width:100px">
+    <option value="1">depth: 1</option>
+    <option value="2" selected>depth: 2</option>
+    <option value="3">depth: 3</option>
+    <option value="4">depth: 4</option>
+  </select>
+  <label><input type="checkbox" id="pv-dry"/>dry_run</label>
+  <button class="btn" id="pv-btn">Pivot Başlat</button>
+  <span class="msg" id="pv-msg"></span>
+</div>
+<div class="summary" id="pv-summary"></div>
+<details class="tech" id="pv-tech"><summary>Teknik Detaylar</summary><pre class="pre" id="pv-json"></pre></details></div>
+
+</main>
+</div>
+
+<!-- Smart Bar belirsiz girdi onay modalı (Task 6) -->
+<div id="sb-modal" role="dialog" aria-modal="true" aria-labelledby="sb-modal-title">
+  <div class="sb-modal-inner">
+    <h3 id="sb-modal-title">Bunu mu aramak istediniz?</h3>
+    <p style="color:var(--text-dim);font-size:13px">Girdi: <b id="sb-modal-value" style="color:var(--text)"></b></p>
+    <div class="sb-modal-buttons">
+      <button class="btn" type="button" data-sb-choice="name">👤 İsim Soyisim</button>
+      <button class="btn" type="button" data-sb-choice="username">🆔 Kullanıcı Adı</button>
+      <button class="btn" type="button" data-sb-choice="domain">🌐 Domain</button>
+      <button class="btn2" type="button" data-sb-choice="cancel">İptal</button>
+    </div>
+  </div>
+</div>
+
+<script>document.getElementById('base').value=location.origin;</script>
+<script>
+/* ════════════════════════════════════════════════════════════════════
+   ARGOS Mini Panel — Türkçe Özet Kartları
+   Her modül için ham JSON yerine kullanıcı dostu özet üretir.
+   Teknik detaylar `<details>` toggle ile gizlidir.
+   ────────────────────────────────────────────────────────────────────
+   Phase 1 eklemeleri:
+
+   ▸ H5 — SMART BAR (#smart-bar, en üst)
+     detectInputType(value, file) → {type, target}
+     Detection sıralaması:
+       file       → image           (görsel yükleme)
+       contains @ → email           (RFC-lite)
+       +/digits   → phone           (≥7 hane)
+       .com|http  → domain          (TLD allowlist veya http(s)://)
+       else       → ambiguous_text  (modal sorar)
+     Dispatch tablosu:
+       email   → card-mosint   (#ms-email,    #ms-btn)
+       phone   → card-phone    (#phone-num,   #phone-btn)
+       domain  → card-domain   (#dm-target,   #dm-btn)
+       image   → card-face     (#face-file,   manual btn)
+       name    → card-unified  (#uni-fname,#uni-lname, manual)
+       username→ card-bios     (#bios-user,   #bios-btn)
+     Audit: data-source="smart-bar" + .sb-source-badge,
+            kullanıcı manuel düzenleyince otomatik temizlenir.
+
+   ▸ H1 — UNIFIED PROFILE (card-unified)
+     Form: Ad, Soyad, Şehir + CSV listeler (emails/phones/usernames) + fast.
+     Backend: POST /scan/full → PersonCard (build_person_card servisi).
+     renderers.uni PersonCard şemasını render eder; eski GET shape'i
+     görürse _renderUniLegacy fallback kullanılır.
+   ════════════════════════════════════════════════════════════════════ */
+
+const $=id=>document.getElementById(id);
+const setJSON=(id,d)=>{ const el=$(id); if(el) el.textContent=JSON.stringify(d,null,2); };
+const msg=(id,t,ok=true)=>{const e=$(id);if(!e)return;e.textContent=t||'';e.className='msg '+(ok?'ok':'err')};
+const baseUrl=()=>($('base').value||location.origin).replace(/\/+$/,'');
+async function GET(p){const r=await fetch(baseUrl()+p,{credentials:'same-origin'});if(!r.ok)throw new Error(r.status+' '+r.statusText);return r.json()}
+async function POST(p,b){const r=await fetch(baseUrl()+p,{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify(b||{}),credentials:'same-origin'});if(!r.ok)throw new Error(r.status+' '+r.statusText);return r.json()}
+
+/* ────────────────────────────────────────────────────────────────────
+   SMART BAR (H5) — global tip-tespitli arama çubuğu
+   Detection sıralaması (öncelik):
+     file       → image      (görsel yükleme)
+     contains @ → email      (RFC-lite regex)
+     +/digits   → phone      (≥7 hane)
+     .com/http  → domain     (TLD whitelist veya http(s)://)
+     else       → ambiguous_text  (modal)
+   Dispatch (Task 6'da): ilgili kartın input'larını doldur, butonu tetikle.
+   ──────────────────────────────────────────────────────────────────── */
+function detectInputType(value, file){
+  if(file) return {type:'image', target:'card-face'};
+  const v=(value||'').trim();
+  if(!v) return {type:'empty', target:null};
+  // email — basit RFC: alnum/dot/_/-/+ @ alnum/. tld
+  if(v.includes('@') && /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v)) return {type:'email', target:'card-mosint'};
+  // phone — opsiyonel +, en az 7 hane (ayraç olarak boşluk/dash/parantez serbest)
+  if(/^\+?[\d][\d\s\-()]{6,}$/.test(v) && (v.replace(/\D/g,'').length >= 7)) return {type:'phone', target:'card-phone'};
+  // domain/URL
+  if(/^https?:\/\//i.test(v) || /\.(com|net|org|io|co|tr|gov|edu|app|dev|ai|me|info)(\b|\/|$)/i.test(v)) return {type:'domain', target:'card-domain'};
+  return {type:'ambiguous_text', target:null};
+}
+
+const SB_TYPE_LABEL = {
+  email:'📧 email',
+  phone:'📱 telefon',
+  domain:'🌐 domain',
+  image:'🖼 görsel',
+  ambiguous_text:'❓ belirsiz metin',
+  empty:'❓ tip bekleniyor'
+};
+
+function updateSbIndicator(){
+  const v=$('sb-text').value, f=$('sb-file').files?.[0];
+  const det=detectInputType(v,f);
+  const ind=$('sb-indicator');
+  if(!ind) return;
+  ind.textContent = SB_TYPE_LABEL[det.type] || '❓';
+  ind.dataset.type = det.type;
+}
+
+(function initSmartBar(){
+  const txt=$('sb-text'), file=$('sb-file'), fileBtn=$('sb-file-btn');
+  if(!txt) return; // smart bar yoksa sessizce çık (defensive)
+  txt.addEventListener('input', updateSbIndicator);
+  file.addEventListener('change', ()=>{ updateSbIndicator(); /* görsel seçilince text alanı bilgilendirici metin */ if(file.files?.[0]) txt.placeholder='Görsel hazır — Ara butonuna bas'; });
+  fileBtn.addEventListener('click', ()=>file.click());
+  updateSbIndicator();
+})();
+
+/* ────────────────────────────────────────────────────────────────────
+   SMART BAR DISPATCH (Task 6)
+   activateCard      → ilgili kartı görünür yap, sidebar butonunu seç
+   setInputAuditFlag → input'a data-source="smart-bar" + görsel badge
+   dispatchToCard    → input(lar)ı doldur, audit flag'le, butonu tıkla
+   openModal/close   → belirsiz düz metin için 3 seçenekli onay
+   ──────────────────────────────────────────────────────────────────── */
+function activateCard(cardId){
+  document.querySelectorAll('.card').forEach(c=>c.classList.remove('active'));
+  document.querySelectorAll('.sidebar button').forEach(b=>b.classList.remove('active'));
+  const card=$(cardId); if(card) card.classList.add('active');
+  const navBtn=document.querySelector(`.sidebar button[data-target="${cardId}"]`);
+  if(navBtn) navBtn.classList.add('active');
+}
+
+function setInputAuditFlag(el){
+  if(!el) return;
+  el.dataset.source='smart-bar';
+  // Badge zaten varsa tekrar ekleme
+  const next=el.nextElementSibling;
+  if(!next || !next.classList?.contains('sb-source-badge')){
+    const badge=document.createElement('span');
+    badge.className='sb-source-badge';
+    badge.textContent='← smart bar';
+    el.parentNode.insertBefore(badge, el.nextSibling);
+  }
+  // Kullanıcı manuel düzenleyince audit kalksın
+  el.addEventListener('input', function clearAudit(){
+    delete el.dataset.source;
+    const b=el.nextElementSibling;
+    if(b && b.classList?.contains('sb-source-badge')) b.remove();
+    el.removeEventListener('input', clearAudit);
+  }, {once:true});
+}
+
+function dispatchToCard(cardId, fills, buttonId){
+  activateCard(cardId);
+  fills.forEach(([id,val])=>{
+    const el=$(id); if(!el) return;
+    if(el.type==='file' && val instanceof File){
+      try{
+        const dt=new DataTransfer();
+        dt.items.add(val);
+        el.files=dt.files;
+      }catch(e){ /* DataTransfer desteklenmiyorsa sessizce atla */ }
+    } else {
+      el.value=val;
+    }
+    setInputAuditFlag(el);
+  });
+  if(buttonId){
+    const btn=$(buttonId);
+    if(btn) btn.click();
+  }
+}
+
+function openModal(value){
+  $('sb-modal-value').textContent=value;
+  $('sb-modal').classList.add('show');
+}
+function closeModal(){ $('sb-modal').classList.remove('show'); }
+
+(function initSmartBarDispatch(){
+  const goBtn=$('sb-go'), txt=$('sb-text'), file=$('sb-file');
+  if(!goBtn) return;
+
+  goBtn.addEventListener('click', ()=>{
+    const v=txt.value.trim();
+    const f=file.files?.[0];
+    const det=detectInputType(v,f);
+    if(det.type==='empty') return;
+    if(det.type==='email')   return dispatchToCard('card-mosint', [['ms-email', v]], 'ms-btn');
+    if(det.type==='phone')   return dispatchToCard('card-phone',  [['phone-num', v]], 'phone-btn');
+    if(det.type==='domain')  return dispatchToCard('card-domain', [['dm-target', v]], 'dm-btn');
+    if(det.type==='image')   return dispatchToCard('card-face',   [['face-file', f]], null); // file ready, kullanıcı manuel "Ara" yapsın
+    if(det.type==='ambiguous_text') return openModal(v);
+  });
+
+  // Enter ile gönder
+  txt.addEventListener('keydown', e=>{
+    if(e.key==='Enter'){ e.preventDefault(); goBtn.click(); }
+  });
+
+  // Modal seçimleri
+  document.querySelectorAll('#sb-modal [data-sb-choice]').forEach(btn=>{
+    btn.addEventListener('click', ()=>{
+      const choice=btn.dataset.sbChoice;
+      const value=$('sb-modal-value').textContent;
+      closeModal();
+      if(choice==='cancel' || !value) return;
+      if(choice==='name'){
+        const parts=value.split(/\s+/);
+        const fn=parts[0]||'';
+        const ln=parts.slice(1).join(' ')||'';
+        // İsimde otomatik tetiklemiyoruz: kullanıcı şehir/email/vb. ekleyebilsin
+        dispatchToCard('card-unified', [['uni-fname', fn], ['uni-lname', ln]], null);
+      } else if(choice==='username'){
+        dispatchToCard('card-bios', [['bios-user', value]], 'bios-btn');
+      } else if(choice==='domain'){
+        dispatchToCard('card-domain', [['dm-target', value]], 'dm-btn');
+      }
+    });
+  });
+
+  // ESC modalı kapatsın, modal arka plan tıklayınca da
+  document.addEventListener('keydown', e=>{ if(e.key==='Escape') closeModal(); });
+  $('sb-modal').addEventListener('click', e=>{
+    if(e.target.id==='sb-modal') closeModal();
+  });
+})();
+
+// ─── HTML helpers ────────────────────────────────────────────────────
+const esc=s=>String(s==null?'':s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+const line=(ic,lbl,val)=>`<div class="s-line"><span class="ic">${ic}</span>${lbl?`<span class="lbl">${lbl}</span>`:''}<span class="val">${val}</span></div>`;
+const big=(ic,html)=>`<div class="s-big"><span class="ic">${ic}</span><span>${html}</span></div>`;
+const empty=(t='Veri bulunamadı.')=>`<div class="summary-empty">${esc(t)}</div>`;
+const section=(title,inner)=>`<div class="s-section">${title?`<div class="s-section-title">${esc(title)}</div>`:''}<div class="s-list">${inner}</div></div>`;
+const item=html=>`<div class="s-item">${html}</div>`;
+
+// ─── Ortak render fonksiyonu ─────────────────────────────────────────
+function render(prefix, data){
+  const sumEl = $(prefix+'-summary');
+  const techEl = $(prefix+'-tech');
+  if (sumEl){
+    try {
+      const renderer = renderers[prefix] || (()=>empty('Render edilemedi.'));
+      const html = renderer(data);
+      sumEl.innerHTML = html || empty('İçerik üretilemedi.');
+      sumEl.classList.add('show');
+    } catch (e){
+      sumEl.innerHTML = `<div class="summary-empty" style="color:var(--error)">Render hatası: ${esc(e.message)}</div>`;
+      sumEl.classList.add('show');
+    }
+  }
+  setJSON(prefix+'-json', data);
+  if (techEl) techEl.open = false; // varsayılan kapalı
+}
+
+function renderError(prefix, err){
+  const sumEl = $(prefix+'-summary');
+  if (sumEl){
+    sumEl.innerHTML = big('⚠','<b style="color:var(--error)">Hata:</b> '+esc(err.message||String(err)));
+    sumEl.classList.add('show');
+  }
+  setJSON(prefix+'-json', {error: String(err.message||err)});
+}
+
+// ─── Module renderers ────────────────────────────────────────────────
+const renderers = {};
+
+// ── MOSINT ──────────────────────────────────────────────────────────
+renderers.ms = (d) => {
+  if (!d) return empty();
+  const parts = [];
+  // Email + status
+  const email = d.email || d.input || '';
+  let status = '⚠', stTxt = 'belirsiz', stColor = 'var(--warning)';
+  if (d.deliverable === 'deliverable' || d.is_smtp_valid === true) { status = '✅'; stTxt = 'geçerli ve teslim edilebilir'; stColor = 'var(--accent)'; }
+  else if (d.deliverable === 'undeliverable' || d.is_smtp_valid === false) { status = '❌'; stTxt = 'teslim edilemez'; stColor = 'var(--error)'; }
+  else if (d.is_format_valid === false) { status = '❌'; stTxt = 'format geçersiz'; stColor = 'var(--error)'; }
+  parts.push(big(status, `<b>${esc(email)}</b> — <span style="color:${stColor}">${stTxt}</span>`));
+
+  if (d.provider) parts.push(line('📬','Sağlayıcı',esc(d.provider)));
+
+  // MX
+  const mx = d.mx;
+  if (mx){
+    const servers = (mx.servers || (Array.isArray(mx)?mx:[]) || []);
+    if (servers.length) parts.push(line('📡','MX kayıtları', `${servers.length} sunucu — <span style="color:var(--text-dim);font-size:11px">${servers.slice(0,2).map(s=>esc(s.host||s)).join(', ')}${servers.length>2?'…':''}</span>`));
+    else if (mx.error) parts.push(line('📡','MX', `<span class="b-err">${esc(mx.error)}</span>`));
+  }
+
+  // SMTP
+  if (d.smtp){
+    const s = d.smtp;
+    if (s.ok && s.code) parts.push(line('✉','SMTP', `<span class="b-ok">${esc(s.code)} ${esc(s.message||'OK')}</span>${s.mx_used?` <span style="color:var(--text-dim);font-size:11px">via ${esc(s.mx_used)}</span>`:''}`));
+    else if (s.error) parts.push(line('✉','SMTP', `<span class="b-warn">${esc(s.error).slice(0,80)}</span>`));
+    else if (s.supported === false) parts.push(line('✉','SMTP', '<span class="b-warn">VRFY desteklenmiyor</span>'));
+  }
+
+  // HIBP
+  if (d.hibp){
+    const h = d.hibp;
+    if (h.ok){
+      const c = h.count ?? (h.items?.length||0);
+      if (c > 0) parts.push(line('🔓','HIBP Sızıntı', `<b style="color:var(--error)">${c} ihlalde bulundu</b>${h.items&&h.items.length?` — <span style="color:var(--text-dim);font-size:11px">${h.items.slice(0,3).map(it=>esc(it.Name||it.name||'?')).join(', ')}${h.items.length>3?'…':''}</span>`:''}`));
+      else parts.push(line('✅','HIBP', '<span class="b-ok">Sızıntı yok</span>'));
+    } else if (h.note) parts.push(line('🔓','HIBP', `<span class="b-warn">${esc(h.note)}</span>`));
+  }
+
+  // Gravatar
+  if (d.gravatar){
+    const g = d.gravatar;
+    if (g.exists) {
+      const dn = g.profile?.entry?.[0]?.displayName || '';
+      parts.push(line('👤','Gravatar', `<span class="b-ok">Profil var</span>${dn?` — ${esc(dn)}`:''}`));
+    } else {
+      parts.push(line('👤','Gravatar', '<span class="b-warn">Profil yok</span>'));
+    }
+  }
+
+  // EmailRep
+  if (d.emailrep?.ok && d.emailrep.data){
+    const r = d.emailrep.data;
+    const rep = r.reputation || '?';
+    const sus = r.suspicious === true ? '⚠ şüpheli' : (r.suspicious === false ? '✓ temiz' : '');
+    parts.push(line('📊','İtibar', `${esc(rep)}${sus?` — ${sus}`:''}`));
+  }
+
+  // Quality
+  if (typeof d.quality_score === 'number') parts.push(line('⭐','Kalite skoru', `${Math.round(d.quality_score*100)}/100`));
+  if (d.is_disposable) parts.push(line('🗑','Tek kullanımlık', '<span class="b-warn">Evet</span>'));
+  if (d.is_free_email) parts.push(line('🆓','Free email', '<span class="b-warn">Evet (Gmail/Yahoo vb.)</span>'));
+
+  // OpenPGP
+  if (d.openpgp?.count > 0) parts.push(line('🔐','OpenPGP', `${d.openpgp.count} anahtar bulundu`));
+
+  return parts.length>1 ? parts.join('') : (parts[0]||empty());
+};
+
+// ── Telefon ─────────────────────────────────────────────────────────
+renderers.phone = (d) => {
+  if (!d) return empty();
+  const nv = d.numverify || {};
+  const ab = d.abstract || {};
+  const main = nv.ok ? nv : (ab.ok ? ab : null);
+
+  const parts = [];
+  if (main){
+    const valid = main.valid !== false && (main.country || main.carrier);
+    parts.push(big(valid?'📱':'⚠', `<b>${esc(d.normalized||d.input)}</b> — <span style="color:${valid?'var(--accent)':'var(--warning)'}">${valid?'geçerli numara':'doğrulanamadı'}</span>`));
+  } else {
+    parts.push(big('📱', `<b>${esc(d.normalized||d.input)}</b>`));
+    parts.push(line('⚠','', `<span class="b-warn">API anahtarları eksik veya hata</span> — ${esc(nv.error||ab.error||'numverify ve abstract çalışmadı')}`));
+  }
+
+  const carrier = nv.carrier || ab.carrier;
+  if (carrier) parts.push(line('📡','Operatör', esc(carrier)));
+
+  const lt = nv.line_type || ab.line_type;
+  if (lt) parts.push(line('📞','Hat tipi', esc(lt)));
+
+  const country = nv.country || ab.country;
+  if (country) parts.push(line('🌍','Ülke', esc(country) + (ab.country_code ? ` <span style="color:var(--text-dim)">(${esc(ab.country_code)})</span>` : '')));
+
+  const loc = nv.location || ab.city || ab.region;
+  if (loc) parts.push(line('📍','Konum', esc(loc)));
+
+  if (ab.timezone) parts.push(line('🕒','Saat dilimi', esc(ab.timezone)));
+
+  return parts.join('');
+};
+
+// ── Dark Web ────────────────────────────────────────────────────────
+renderers.dw = (d) => {
+  if (!d) return empty();
+  const lc = d.leakcheck || {};
+  const total = d?.summary?.total_breaches ?? 0;
+  const parts = [];
+
+  if (lc.ok && total > 0){
+    parts.push(big('🔓', `<b style="color:var(--error)">${total} veri ihlalinde bulundu</b>`));
+  } else if (lc.ok){
+    parts.push(big('✅', `<b style="color:var(--accent)">Bilinen sızıntı yok</b>`));
+  } else {
+    parts.push(big('⚠', `<b>Sorgu yapılamadı</b> — ${esc(lc.error||'API hatası')}`));
+  }
+
+  parts.push(line('🔍','Sorgu', `${esc(d.query)}${d.query_type&&d.query_type!=='auto'?` <span style="color:var(--text-dim)">(${esc(d.query_type)})</span>`:''}`));
+
+  const sources = lc.sources || [];
+  if (sources.length){
+    const items = sources.slice(0,12).map(s => item(
+      `<b>${esc(s.name||'?')}</b>${s.date?` <span style="color:var(--text-dim);font-size:11px">${esc(s.date)}</span>`:''}` +
+      `${(s.fields&&s.fields.length)?`<div style="color:var(--text-dim);font-size:11px;margin-top:3px">Sızan alanlar: ${s.fields.map(esc).join(', ')}</div>`:''}`
+    )).join('');
+    parts.push(section(`Sızdıran siteler${sources.length>12?` (ilk 12 / ${sources.length})`:''}`, items));
+  }
+
+  return parts.join('');
+};
+
+// ── Domain ──────────────────────────────────────────────────────────
+renderers.dm = (d) => {
+  if (!d) return empty();
+  const w = d.whois || {}, dn = d.dns || {}, g = d.geo || {};
+  const records = dn.records || {};
+  const parts = [];
+
+  parts.push(big('🌐', `<b>${esc(d.target)}</b>${d.ip?` <span style="color:var(--text-dim);font-size:13px;font-weight:400">→ ${esc(d.ip)}</span>`:''}`));
+
+  // WHOIS
+  if (w.ok){
+    if (w.registrar) parts.push(line('🏢','Kayıt firması', esc(w.registrar)));
+    if (w.created) parts.push(line('📅','Kayıt tarihi', esc(String(w.created).slice(0,10))));
+    if (w.updated) parts.push(line('🔄','Son güncelleme', esc(String(w.updated).slice(0,10))));
+    if (w.expires) parts.push(line('⏳','Bitiş', esc(String(w.expires).slice(0,10))));
+  } else if (w.error){
+    parts.push(line('⚠','WHOIS', `<span class="b-warn">${esc(w.error)}</span>`));
+  }
+
+  // DNS
+  if (records.NS?.length) parts.push(line('🌐','Nameserver', records.NS.slice(0,3).map(s => esc(String(s).replace(/\.$/,''))).join(', ')));
+  if (records.MX?.length) parts.push(line('📬','MX', `${records.MX.length} kayıt`));
+  if (records.A?.length) parts.push(line('📡','A kayıtları', records.A.slice(0,3).map(esc).join(', ')));
+  if (records.TXT?.length) parts.push(line('📝','TXT', `${records.TXT.length} kayıt`));
+
+  // Geo
+  if (g.ok && (g.country || g.city)){
+    const loc = [g.city, g.region, g.country].filter(Boolean).map(esc).join(' / ');
+    parts.push(line('📍','Sunucu konumu', `${loc}${g.isp?` <span style="color:var(--text-dim);font-size:11px">[${esc(g.isp)}]</span>`:''}`));
+    if (g.vpn || g.tor || g.threat) parts.push(line('⚠','Güvenlik', `<span class="b-warn">${[g.vpn&&'VPN', g.tor&&'TOR', g.threat&&'Threat'].filter(Boolean).join(', ')}</span>`));
+  }
+
+  return parts.length>1 ? parts.join('') : (parts[0]||empty());
+};
+
+// ── IG Bio + IG Profile v2 ─────────────────────────────────────────
+function renderIgProfile(d){
+  if (!d) return empty();
+  if (d.error) return big('⚠', `<b style="color:var(--error)">Profil alınamadı:</b> ${esc(d.error)}`);
+
+  const parts = [];
+  const found = d.bio || d.full_name || d.biography;
+  parts.push(big(found?'📸':'⚠',
+    `<b>@${esc(d.username||'?')}</b>${d.full_name?` — ${esc(d.full_name)}`:''} <span style="color:${found?'var(--accent)':'var(--warning)'};font-size:12px">${found?'profil bulundu':'veri yok'}</span>`));
+
+  const bio = d.bio || d.biography;
+  if (bio) parts.push(line('📝','Bio', `<span style="white-space:pre-wrap">${esc(bio)}</span>`));
+  if (d.source) parts.push(line('🔌','Kaynak', `<span style="color:var(--text-dim)">${esc(d.source)}</span>`));
+
+  // Eğer get_profile 'profile' objesi döndürüyorsa
+  if (d.profile){
+    const p = d.profile;
+    if (p.followers !== undefined) parts.push(line('👥','Takipçi', String(p.followers)));
+    if (p.following !== undefined) parts.push(line('👤','Takip', String(p.following)));
+    if (p.posts !== undefined) parts.push(line('📷','Gönderi', String(p.posts)));
+    if (p.is_private) parts.push(line('🔒','Gizlilik', '<span class="b-warn">Gizli hesap</span>'));
+    if (p.is_verified) parts.push(line('✅','Doğrulama', '<span class="b-ok">Verified</span>'));
+  }
+
+  return parts.join('');
+}
+renderers.igbio = renderIgProfile;
+renderers.igp2 = renderIgProfile;
+
+// ── Photos ──────────────────────────────────────────────────────────
+renderers.pho = (d) => {
+  if (!d) return empty();
+  const photos = d.photos || [];
+  if (!photos.length) return big('🖼','<b>Görsel bulunamadı.</b>');
+
+  const bySrc = {};
+  photos.forEach(p => bySrc[p.source||'?'] = (bySrc[p.source||'?']||0) + 1);
+  const srcStr = Object.entries(bySrc).map(([k,v])=>`<b>${esc(k)}</b>: ${v}`).join(' • ');
+
+  return big('🖼', `<b>${photos.length} görsel</b> bulundu — <span style="color:var(--text-dim);font-size:12px;font-weight:400">${srcStr}</span>`);
+};
+
+// ── Compare IG vs X ────────────────────────────────────────────────
+renderers.cmp = (d) => {
+  if (!d) return empty();
+  const ig = d.instagram || {}, xt = d.x_twitter || {};
+  const score = d.score ?? d.similarity?.score_raw ?? 0;
+  const verdict = d.verdict || 'Low';
+  const pct = Math.round(score*100);
+
+  const vConf = {
+    High:    {color:'var(--accent)', txt:'Yüksek eşleşme — büyük olasılıkla aynı kişi', ic:'🟢'},
+    Medium:  {color:'var(--warning)', txt:'Orta eşleşme — olası bağlantı, doğrulama önerilir', ic:'🟡'},
+    Low:     {color:'var(--error)', txt:'Düşük eşleşme — muhtemelen farklı kişiler', ic:'🔴'},
+  }[verdict] || {color:'var(--text)', txt:verdict, ic:'⚖'};
+
+  const parts = [];
+  parts.push(big(vConf.ic, `<b style="color:${vConf.color}">${vConf.txt}</b> — benzerlik <b>%${pct}</b>`));
+
+  const igStat = ig.status === 'exists' ? '✅' : (ig.status === 'not_found' ? '❌' : '❓');
+  const xtStat = xt.status === 'exists' ? '✅' : (xt.status === 'not_found' ? '❌' : '❓');
+  parts.push(line('📸','Instagram', `${igStat} @${esc(ig.username||'?')}${ig.display_name?` — ${esc(ig.display_name)}`:''}${ig.bio?`<div style="color:var(--text-dim);font-size:11px;margin-top:3px;white-space:pre-wrap">${esc(String(ig.bio).slice(0,150))}</div>`:''}`));
+  parts.push(line('🐦','X / Twitter', `${xtStat} @${esc(xt.username||'?')}${xt.display_name?` — ${esc(xt.display_name)}`:''}${xt.bio?`<div style="color:var(--text-dim);font-size:11px;margin-top:3px;white-space:pre-wrap">${esc(String(xt.bio).slice(0,150))}</div>`:''}`));
+
+  if (d.similarity){
+    const s = d.similarity;
+    const bits = [];
+    if (typeof s.score_raw === 'number') bits.push(`bio: %${Math.round(s.score_raw*100)}`);
+    if (typeof s.jaccard_raw === 'number') bits.push(`jaccard: %${Math.round(s.jaccard_raw*100)}`);
+    if (bits.length) parts.push(line('📊','Skor detayı', bits.join(' • ')));
+  }
+
+  return parts.join('');
+};
+
+// ── Hunt X ──────────────────────────────────────────────────────────
+renderers.hunt = (d) => {
+  if (!d) return empty();
+  const results = d.results || [];
+  if (!results.length) return big('🔍', `<b>Profil bulunamadı.</b> ${d.candidates_tried||0} aday denendi.`);
+
+  const top = results[0];
+  const topPct = Math.round((top.scores?.total||0)*100);
+  const parts = [];
+
+  parts.push(big('🔍', `<b>${results.length} sonuç</b> — en yüksek skor <b style="color:var(--accent)">%${topPct}</b> <span style="color:var(--text-dim);font-size:12px;font-weight:400">(${d.candidates_tried||0} aday tarandı)</span>`));
+  if (d.full_name) parts.push(line('👤','Aranan', esc(d.full_name)));
+  if (d.keywords?.length) parts.push(line('🔑','Anahtar', d.keywords.map(esc).join(', ')));
+
+  const items = results.slice(0, 8).map(r => {
+    const p = r.profile || {};
+    const sc = Math.round((r.scores?.total||0)*100);
+    const stat = p.status === 'exists' ? '✅' : (p.status === 'not_found' ? '❌' : '❓');
+    const dn = p.display_name ? ` — ${esc(p.display_name)}` : '';
+    const bio = p.bio ? `<div style="color:var(--text-dim);font-size:11px;margin-top:3px">${esc(String(p.bio).slice(0,100))}</div>` : '';
+    const url = p.profile_url ? ` <a href="${esc(p.profile_url)}" target="_blank" class="s-link" style="font-size:11px">↗</a>` : '';
+    return item(`${stat} <b>@${esc(r.username)}</b>${dn}${url} <span style="color:var(--accent);float:right;font-weight:600">%${sc}</span>${bio}`);
+  }).join('');
+
+  parts.push(section(`En iyi adaylar (ilk ${Math.min(8,results.length)})`, items));
+  return parts.join('');
+};
+
+// ── EXIF ────────────────────────────────────────────────────────────
+renderers.exif = (d) => {
+  if (!d) return empty();
+  if (!d.ok) return big('⚠', `<b style="color:var(--error)">Hata:</b> ${esc(d.error||'Analiz başarısız')}`);
+
+  const ex = d.exif || {};
+  const tagCount = Object.keys(ex).length;
+  const parts = [];
+
+  parts.push(big(tagCount?'🗂':'⚠',
+    `<b>${esc(d.format||'?')}</b> ${esc(d.mode||'')} — <b>${(d.size||0).toLocaleString('tr-TR')}</b> bayt — ${tagCount?`${tagCount} EXIF tag`:'EXIF verisi yok'}`));
+
+  if (ex.Make || ex.Model){
+    parts.push(line('📷','Cihaz', `${esc(ex.Make||'')} ${esc(ex.Model||'')}`.trim()));
+  }
+  if (ex.LensModel) parts.push(line('🔭','Lens', esc(ex.LensModel)));
+  if (ex.DateTimeOriginal || ex.DateTime) parts.push(line('📅','Çekim tarihi', esc(ex.DateTimeOriginal||ex.DateTime)));
+  if (ex.Software) parts.push(line('💻','Yazılım', esc(ex.Software)));
+  if (ex.Orientation) parts.push(line('🧭','Yön', esc(ex.Orientation)));
+
+  // GPS
+  if (ex.GPSInfo){
+    const gpsStr = String(ex.GPSInfo);
+    // Try to extract lat/lng if it's a tuple-like string
+    const m = gpsStr.match(/(-?\d+\.?\d*)[,\s]+(-?\d+\.?\d*)/);
+    if (m){
+      parts.push(line('📍','GPS', `<span class="b-ok">${m[1]}, ${m[2]}</span> — <a href="https://www.google.com/maps?q=${m[1]},${m[2]}" target="_blank" class="s-link">Haritada Aç ↗</a>`));
+    } else {
+      parts.push(line('📍','GPS', `<span class="b-ok">Var</span> <span style="color:var(--text-dim);font-size:11px">${esc(gpsStr.slice(0,100))}</span>`));
+    }
+  } else {
+    parts.push(line('📍','GPS', '<span class="b-warn">Konum verisi yok</span>'));
+  }
+
+  if (ex.ExifImageWidth && ex.ExifImageHeight){
+    parts.push(line('📐','Boyut', `${ex.ExifImageWidth} × ${ex.ExifImageHeight} px`));
+  }
+
+  return parts.join('');
+};
+
+// ── Unified Profile (PersonCard) ────────────────────────────────────
+const PLATFORM_ICON = {
+  instagram:'📸', x:'🐦', twitter:'🐦', linkedin:'💼', github:'🐙',
+  tiktok:'🎬', facebook:'👥', medium:'✍', pinterest:'📌', youtube:'📺', reddit:'🤖'
+};
+
+renderers.uni = (d) => {
+  if (!d) return empty();
+  if (d.detail || d.error) return big('⚠', `<b style="color:var(--error)">Hata:</b> ${esc(d.detail||d.error)}`);
+
+  // Sadece zengin PersonCard şemasını render et. Eski GET shape (input+results)
+  // gelirse fallback yap.
+  if (!('profiles' in d) && !('summary' in d && d.summary && typeof d.summary==='object')){
+    return _renderUniLegacy(d);
+  }
+
+  const q = d.query || {};
+  const summary = d.summary || {};
+  const profiles = d.profiles || [];
+  const emails = d.emails || [];
+  const phones = d.phones || [];
+  const sources = d.sources || [];
+  const conf = Math.round((summary.confidence_overall || 0) * 100);
+  const confColor = conf >= 70 ? 'var(--accent)' : (conf >= 40 ? 'var(--warning)' : 'var(--error)');
+
+  // Profil avatar (varsa)
+  let avatarHtml = '';
+  const firstProfileImg = profiles[0]?.raw?.profile?.profile_image_url || profiles[0]?.raw?.profile?.avatar;
+  if (firstProfileImg){
+    avatarHtml = `<img src="${esc(firstProfileImg)}" alt="" style="width:48px;height:48px;border-radius:50%;object-fit:cover;vertical-align:middle;margin-right:10px"/>`;
+  } else if (q.first_name){
+    const initials = ((q.first_name||'?')[0] + (q.last_name||'')[0]).toUpperCase();
+    avatarHtml = `<span style="display:inline-flex;width:48px;height:48px;border-radius:50%;background:var(--surface2);border:1px solid var(--border);align-items:center;justify-content:center;font-weight:700;color:var(--accent);margin-right:10px">${esc(initials)}</span>`;
+  }
+
+  const parts = [];
+  // Üst: avatar + isim + güven
+  const fullName = `${esc(q.first_name||'')} ${esc(q.last_name||'')}`.trim() || '(isimsiz)';
+  parts.push(`<div class="s-big">${avatarHtml}<span><b>${fullName}</b>${q.hometown?` — <span style="color:var(--text-dim);font-size:13px;font-weight:400">${esc(q.hometown)}</span>`:''} <span style="color:${confColor};font-weight:700">%${conf}</span> <span style="color:var(--text-dim);font-size:11px">güven</span></span></div>`);
+
+  // Verdict + en iyi handle tahmini
+  const bestGuesses = summary.username_best_guesses || [];
+  if (bestGuesses.length){
+    parts.push(line('🎯','Öneri', bestGuesses.slice(0,5).map(h=>`<code style="color:var(--accent)">@${esc(h)}</code>`).join(' · ')));
+  }
+  if (d.verdict){
+    const vBadge = d.verdict==='ok' ? '<span class="b-ok">başarılı</span>' :
+                   d.verdict==='partial' ? '<span class="b-warn">kısmi</span>' :
+                   '<span class="b-err">başarısız</span>';
+    parts.push(line('🏁','Sonuç', vBadge));
+  }
+
+  // Orta: sosyal hesaplar
+  if (profiles.length){
+    const profItems = profiles.slice(0,15).map(p => {
+      const ic = PLATFORM_ICON[p.platform?.toLowerCase()] || '🔗';
+      const status = (p.status==='exists' || p.status==='found') ? '<span class="b-ok">var</span>' :
+                     (p.status==='not_found') ? '<span class="b-err">yok</span>' :
+                     '<span class="b-warn">belirsiz</span>';
+      const pct = Math.round((p.confidence||0)*100);
+      const handle = p.handle ? `@${esc(p.handle)}` : '(handle yok)';
+      const link = p.url ? ` <a href="${esc(p.url)}" target="_blank" class="s-link" style="float:right;font-size:11px">aç ↗</a>` : '';
+      return item(`${ic} <b>${esc(p.platform||'?')}</b> — ${handle} ${status} <span style="color:var(--text-dim);font-size:11px">%${pct}</span>${link}`);
+    }).join('');
+    parts.push(section(`Sosyal Hesaplar${profiles.length>15?` (ilk 15 / ${profiles.length})`:` (${profiles.length})`}`, profItems));
+  } else {
+    parts.push(section('Sosyal Hesaplar', item('<span style="color:var(--text-dim)">Profil bulunamadı.</span>')));
+  }
+
+  // Alt: dark web breach + ilişkili emailler/telefonlar
+  let breachTotal = 0;
+  let breachKnown = false;
+  emails.forEach(e => {
+    const hibp = e?.result?.results?.hibp;
+    if (!hibp) return;
+    breachKnown = true;
+    const c = hibp?.data?.count ?? hibp?.count ?? hibp?.data?.items?.length ?? 0;
+    breachTotal += Number(c) || 0;
+  });
+  const breachInner = [];
+  if (breachKnown){
+    if (breachTotal > 0){
+      breachInner.push(item(`🔓 <b style="color:var(--error)">${breachTotal}</b> ihlalde bulundu`));
+    } else {
+      breachInner.push(item('✅ <span class="b-ok">Bilinen sızıntı yok</span>'));
+    }
+  } else if (emails.length){
+    breachInner.push(item('<span style="color:var(--text-dim)">HIBP sorgulanmadı (hızlı mod veya anahtar yok)</span>'));
+  }
+  emails.forEach(e => {
+    if (e?.email) breachInner.push(item(`📧 <code>${esc(e.email)}</code>`));
+  });
+  phones.forEach(p => breachInner.push(item(`📱 <code>${esc(p)}</code>`)));
+  if (breachInner.length){
+    parts.push(section('Dark Web & Bağlantılar', breachInner.join('')));
+  }
+
+  // Kaynaklar (kısa)
+  if (sources.length){
+    const ok = sources.filter(s=>s.ok).length;
+    parts.push(line('📡','Kaynaklar', `${ok}/${sources.length} başarılı`));
+  }
+  if (d.took_ms) parts.push(line('⏱','Süre', `${d.took_ms} ms`));
+
+  return parts.join('');
+};
+
+// Eski GET shape için fallback (smart bar veya doğrudan curl edenler için)
+function _renderUniLegacy(d){
+  const parts = [];
+  parts.push(big('🔗', '<b>Birleşik analiz</b> <span style="color:var(--text-dim);font-size:11px">(legacy GET shape)</span>'));
+  if (d.input){
+    if (d.input.email) parts.push(line('📧','Email', esc(d.input.email)));
+    if (d.input.username) parts.push(line('👤','Kullanıcı', esc(d.input.username)));
+    if (d.input.phone) parts.push(line('📱','Telefon', esc(d.input.phone)));
+  }
+  if (d.results){
+    const ok = Object.values(d.results).filter(r => r?.ok).length;
+    const tot = Object.keys(d.results).length;
+    parts.push(line('📊','Kaynak başarısı', `${ok}/${tot} kaynak başarılı`));
+    Object.entries(d.results).forEach(([name,r])=>{
+      const ic = r?.ok ? '✅' : '❌';
+      const dur = r?.duration_ms ? ` <span style="color:var(--text-dim);font-size:11px">${r.duration_ms}ms</span>` : '';
+      parts.push(line(ic, name, r?.ok ? `<span class="b-ok">tamam</span>${dur}` : `<span class="b-err">${esc((r?.error||'hata').slice(0,80))}</span>${dur}`));
+    });
+  }
+  if (d.verdict) parts.push(line('🏁','Sonuç', `<b>${esc(d.verdict)}</b>`));
+  if (d.took_ms) parts.push(line('⏱','Süre', `${d.took_ms} ms`));
+  return parts.join('');
+}
+
+// ── Username Bios ───────────────────────────────────────────────────
+renderers.bios = (d) => {
+  if (!d) return empty();
+  const results = d.results || [];
+  const parts = [];
+
+  const found = results.filter(r => r.status === 'exists' || r.status === 'found' || r.status === true);
+  parts.push(big('👤', `<b>@${esc(d.username)}</b> — <b style="color:${found.length?'var(--accent)':'var(--warning)'}">${found.length}/${results.length}</b> platformda bulundu`));
+
+  if (results.length){
+    const items = results.map(r => {
+      const stat = (r.status === 'exists' || r.status === 'found' || r.status === true) ? '✅' :
+                   (r.status === 'not_found' || r.status === false) ? '❌' : '❓';
+      const dn = r.display_name ? ` — ${esc(r.display_name)}` : '';
+      const url = r.url ? ` <a href="${esc(r.url)}" target="_blank" class="s-link" style="float:right;font-size:11px">↗</a>` : '';
+      const bio = r.bio ? `<div style="color:var(--text-dim);font-size:11px;margin-top:3px;white-space:pre-wrap">${esc(String(r.bio).slice(0,140))}</div>` : '';
+      return item(`${stat} <b>${esc(r.platform||'?')}</b>${dn}${url}${bio}`);
+    }).join('');
+    parts.push(section('Platform sonuçları', items));
+  }
+
+  return parts.join('');
+};
+
+// ── Yüz Tanıma ──────────────────────────────────────────────────────
+renderers.face = (d) => {
+  if (!d) return empty();
+  const fd = d.face_detection || {};
+  const cnt = fd.face_count || 0;
+  const matches = d.matches || [];
+  const engines = d.engines || {};
+  const parts = [];
+
+  // Header — yüz tespiti + temel özellik
+  if (cnt === 0){
+    parts.push(big('⚠', `<b style="color:var(--warning)">Yüz tespit edilemedi</b>`));
+  } else {
+    const f = fd.faces?.[0] || {};
+    const trAge = f.approximate_age || '';
+    const trGender = ({male:'erkek', female:'kadın', unknown:'belirsiz'}[f.gender_presentation] || f.gender_presentation || '');
+    const trEmo = ({neutral:'tarafsız ifade', happy:'mutlu', sad:'üzgün', angry:'kızgın', surprised:'şaşkın'}[f.emotion] || f.emotion || '');
+    const desc = [trAge && `${trAge} yaşlarında`, trGender, trEmo && `${trEmo}`].filter(Boolean).join(', ');
+    parts.push(big('✅', `<b>${cnt} yüz tespit edildi</b>${desc?` — ${esc(desc)}`:''}`));
+    if (f.description) parts.push(line('📝','Açıklama', `<span style="color:var(--text-dim);font-style:italic">${esc(f.description)}</span>`));
+    // Diğer yüzler
+    if (cnt > 1 && fd.faces?.length > 1){
+      parts.push(line('👥','Diğer yüzler', `${cnt-1} yüz daha tespit edildi`));
+    }
+  }
+
+  // Verdict
+  const vMap = {
+    matches_found:    {ic:'🎯', html:`<b style="color:var(--accent)">${matches.length} eşleşme bulundu</b>`},
+    no_match:         {ic:'🔍', html:`<span class="b-warn">İnternette eşleşme bulunamadı</span>`},
+    no_face_detected: {ic:'⚠',  html:`<span class="b-err">Yüz tespit edilemedi</span>`},
+  };
+  const v = vMap[d.verdict] || {ic:'ℹ', html:esc(d.verdict||'?')};
+  parts.push(line(v.ic, 'Sonuç', v.html));
+
+  // Engine'ler
+  Object.entries(engines).forEach(([name, eng]) => {
+    const dispName = ({saucenao:'SauceNAO', google_vision:'Google Vision', tineye:'TinEye', google_lens:'Google Lens', yandex:'Yandex Images'}[name]) || name;
+    if (!eng.ok){
+      const err = eng.error === 'no_api_key' ? 'API anahtarı yok' : (eng.error || 'hata');
+      parts.push(line('🔍', dispName, `<span class="b-warn">${esc(err)}</span>`));
+    } else {
+      const c = (eng.results||[]).length;
+      parts.push(line('🔍', dispName, c>0 ? `<span class="b-ok">${c} sonuç</span>` : `<span class="b-warn">Eşleşme bulunamadı</span>`));
+    }
+  });
+
+  // Match list
+  if (matches.length){
+    const items = matches.slice(0, 8).map(m => {
+      const t = esc(m.type||'?');
+      const url = esc(m.url||'');
+      const title = esc(m.title || (m.url||'').slice(0, 80));
+      const sim = m.similarity ? ` <span style="color:var(--accent);font-size:11px">%${Math.round(m.similarity)}</span>` : '';
+      return item(`<span style="color:var(--text-dim)">[${t}]</span> <a href="${url}" target="_blank" class="s-link">${title}</a>${sim}`);
+    }).join('');
+    parts.push(section(`Eşleşmeler (ilk ${Math.min(8,matches.length)} / ${matches.length})`, items));
+  }
+
+  return parts.join('');
+};
+
+// ── Geo Photo ───────────────────────────────────────────────────────
+renderers.geo = (d) => {
+  if (!d) return empty();
+  if (d.fallback === true){
+    return big('⚠', `<b style="color:var(--error)">Konum belirlenemedi</b> — ${esc(d.reasoning?.error||'sinyal yok')}`);
+  }
+
+  const srcMap = {
+    exif:           {label:'EXIF GPS metadata', ic:'📍'},
+    visual_fusion:  {label:'Görsel analiz', ic:'👁'},
+    solar_fusion:   {label:'Güneş açısı analizi', ic:'☀'},
+    full_fusion:    {label:'Tam füzyon (görsel+güneş+web)', ic:'⚡'},
+    plate_match:    {label:'Plaka eşleştirme', ic:'🚗'},
+    ai_fusion:      {label:'AI füzyon', ic:'🤖'},
+  };
+  const src = srcMap[d.source] || {label:d.source||'?', ic:'🗺'};
+
+  const parts = [];
+  parts.push(big(src.ic, `<b style="color:var(--accent)">Konum belirlendi</b> — kaynak: ${esc(src.label)}`));
+
+  if (d.lat != null && d.lng != null){
+    const lat = Number(d.lat).toFixed(4), lng = Number(d.lng).toFixed(4);
+    parts.push(line('🎯','Koordinat', `${lat}, ${lng} — <a href="https://www.google.com/maps?q=${d.lat},${d.lng}" target="_blank" class="s-link">Haritada Aç ↗</a>`));
+  }
+
+  if (d.country || d.region){
+    parts.push(line('🌍','Bölge', `${esc(d.country||'?')}${d.region?` / ${esc(d.region)}`:''}`));
+  }
+  if (d.confidence != null){
+    const pct = Math.round(d.confidence*100);
+    const c = pct >= 70 ? 'var(--accent)' : (pct >= 40 ? 'var(--warning)' : 'var(--error)');
+    parts.push(line('📊','Güven skoru', `<b style="color:${c}">%${pct}</b>`));
+  }
+  if (d.radius_km) parts.push(line('⭕','Yarıçap', `±${d.radius_km} km`));
+  if (d.reasoning?.method || d.reasoning?.fusion){
+    parts.push(line('💡','Yöntem', esc(d.reasoning.method || d.reasoning.fusion)));
+  }
+
+  return parts.join('');
+};
+
+// ── Temporal Intel ─────────────────────────────────────────────────
+renderers.ti = (d) => {
+  if (!d) return empty();
+  const evCnt = d.event_count ?? (d.events||[]).length;
+  const anCnt = d.anomaly_count ?? (d.anomalies||[]).length;
+  const clCnt = d.cluster_count ?? (d.clusters||[]).length;
+  const parts = [];
+
+  parts.push(big('⏱', `<b>${evCnt} olay</b>, <b style="color:${anCnt>0?'var(--warning)':'var(--accent)'}">${anCnt} anomali</b>${clCnt?`, ${clCnt} küme`:''}`));
+  if (d.seed_key) parts.push(line('🔑','Seed', esc(d.seed_key)));
+  if (d.computed_at) parts.push(line('🕒','Hesaplandı', esc(String(d.computed_at).slice(0,19).replace('T',' '))));
+
+  if ((d.anomalies||[]).length){
+    const items = d.anomalies.slice(0,6).map(a => {
+      const sevMap = {high:'var(--error)', medium:'var(--warning)', low:'var(--text-dim)'};
+      const c = sevMap[a.severity] || 'var(--text)';
+      return item(`<b style="color:${c}">[${esc(a.severity||'?')}]</b> ${esc(a.type||'?')}<div style="color:var(--text-dim);font-size:11px;margin-top:3px">${esc(a.explanation||'')}</div>`);
+    }).join('');
+    parts.push(section(`Anomaliler${d.anomalies.length>6?` (ilk 6 / ${d.anomalies.length})`:''}`, items));
+  }
+
+  if (d.narrative){
+    parts.push(line('💬','Öykü', `<span style="white-space:pre-wrap;font-style:italic;color:var(--muted)">${esc(String(d.narrative).slice(0,500))}</span>`));
+  }
+
+  return parts.join('');
+};
+
+// ── Pivot ───────────────────────────────────────────────────────────
+renderers.pv = (d) => {
+  if (!d) return empty();
+  const nodes = d.nodes_discovered || [];
+  const stColor = {completed:'var(--accent)', failed:'var(--error)', timeout:'var(--warning)', running:'var(--warning)'}[d.status] || 'var(--text)';
+  const stIc = {completed:'✅', failed:'❌', timeout:'⏰', running:'🔄'}[d.status] || '🔀';
+
+  const parts = [];
+  parts.push(big(stIc, `Status: <b style="color:${stColor}">${esc(d.status||'?')}</b> — <b>${nodes.length} node</b> keşfedildi`));
+  if (d.session_id) parts.push(line('🆔','Oturum', `<code style="font-size:11px">${esc(d.session_id)}</code>`));
+  if (d.depth_reached !== undefined) parts.push(line('📐','Derinlik', `${d.depth_reached}${d.max_depth?` / ${d.max_depth}`:''}`));
+  if (d.expansions_count !== undefined) parts.push(line('🔁','Expansion', String(d.expansions_count)));
+
+  if (nodes.length){
+    const items = nodes.slice(0,10).map(n => {
+      const t = esc(n.entity_type||n.type||'?');
+      const v = esc(n.value||n.key||'?');
+      const dep = n.depth!==undefined ? `<span style="color:var(--text-dim);float:right;font-size:11px">d=${n.depth}</span>` : '';
+      return item(`<b>${t}:</b> ${v}${dep}`);
+    }).join('');
+    parts.push(section(`Keşfedilen node'lar${nodes.length>10?` (ilk 10 / ${nodes.length})`:''}`, items));
+  }
+
+  return parts.join('');
+};
+
+// ─── Sidebar navigation ──────────────────────────────────────────────
+const btns=document.querySelectorAll('.sidebar button');
+const cards=document.querySelectorAll('.card');
+btns.forEach(b=>b.addEventListener('click',()=>{
+  btns.forEach(x=>x.classList.remove('active'));
+  cards.forEach(c=>c.classList.remove('active'));
+  b.classList.add('active');
+  const t=b.dataset.target;
+  if($(t))$(t).classList.add('active');
+}));
+
+// ─── Module handlers ────────────────────────────────────────────────
+
+// MOSINT
+$('ms-btn').onclick=async()=>{
+  const e=$('ms-email').value.trim();
+  if(!e){msg('ms-msg','email gir',false);return}
+  msg('ms-msg','analiz ediliyor...');
+  try{
+    const d=await GET('/mosint/full?email='+encodeURIComponent(e)+'&smtp='+($('ms-smtp').checked?1:0)+'&deep='+($('ms-deep').checked?1:0));
+    render('ms', d);
+    msg('ms-msg','✓ tamam');
+  }catch(x){renderError('ms',x);msg('ms-msg',x.message,false)}
+};
+
+// Telefon
+$('phone-btn').onclick=async()=>{
+  const n=$('phone-num').value.trim();
+  if(!n){msg('phone-msg','numara gir',false);return}
+  msg('phone-msg','sorgulanıyor...');
+  try{
+    const d=await GET('/phone/lookup?number='+encodeURIComponent(n));
+    render('phone', d);
+    msg('phone-msg','✓ tamam');
+  }catch(x){renderError('phone',x);msg('phone-msg',x.message,false)}
+};
+
+// Dark Web
+$('dw-btn').onclick=async()=>{
+  const q=$('dw-q').value.trim();
+  if(!q){msg('dw-msg','sorgu gir',false);return}
+  msg('dw-msg','sorgulanıyor...');
+  try{
+    const d=await GET('/darkweb/lookup?query='+encodeURIComponent(q)+'&type='+$('dw-type').value);
+    render('dw', d);
+    msg('dw-msg','✓ tamam');
+  }catch(x){renderError('dw',x);msg('dw-msg',x.message,false)}
+};
+
+// Domain
+$('dm-btn').onclick=async()=>{
+  const t=$('dm-target').value.trim();
+  if(!t){msg('dm-msg','domain gir',false);return}
+  msg('dm-msg','analiz ediliyor...');
+  try{
+    const d=await GET('/domain/lookup?target='+encodeURIComponent(t));
+    render('dm', d);
+    msg('dm-msg','✓ tamam');
+  }catch(x){renderError('dm',x);msg('dm-msg',x.message,false)}
+};
+
+// IG Bio
+$('igbio-btn').onclick=async()=>{
+  const u=$('igbio-user').value.trim();
+  if(!u){msg('igbio-msg','kullanici adi gir',false);return}
+  msg('igbio-msg','yukleniyor...');
+  try{
+    const d=await GET('/ig/bio?username='+encodeURIComponent(u));
+    render('igbio', d);
+    msg('igbio-msg','✓ tamam');
+  }catch(x){renderError('igbio',x);msg('igbio-msg',x.message,false)}
+};
+
+// IG Profile v2
+$('igp2-btn').onclick=async()=>{
+  const u=$('igp2-user').value.trim();
+  if(!u){msg('igp2-msg','kullanici adi gir',false);return}
+  msg('igp2-msg','yukleniyor...');
+  try{
+    const d=await GET('/v2/ig-profile?username='+encodeURIComponent(u));
+    render('igp2', d);
+    msg('igp2-msg','✓ tamam');
+  }catch(x){renderError('igp2',x);msg('igp2-msg',x.message,false)}
+};
+
+// Photos
+$('pho-btn').onclick=async()=>{
+  const u=$('pho-user').value.trim();
+  if(!u){msg('pho-msg','kullanici adi gir',false);return}
+  msg('pho-msg','yukleniyor...');
+  $('pho-grid').innerHTML='';
+  try{
+    const d=await GET('/photos?username='+encodeURIComponent(u)+'&limit='+($('pho-limit').value||6));
+    render('pho', d);
+    (d.photos||[]).forEach(p=>{
+      const div=document.createElement('div');
+      div.innerHTML='<img src="'+esc(p.url)+'" alt="">';
+      $('pho-grid').appendChild(div);
+    });
+    msg('pho-msg','✓ '+((d.photos||[]).length)+' görsel');
+  }catch(x){renderError('pho',x);msg('pho-msg',x.message,false)}
+};
+
+// Compare
+$('cmp-btn').onclick=async()=>{
+  const u=$('cmp-user').value.trim();
+  if(!u){msg('cmp-msg','kullanici adi gir',false);return}
+  msg('cmp-msg','karşılaştırılıyor...');
+  try{
+    const q=new URLSearchParams({username:u});
+    const h=$('cmp-hint').value.trim();
+    if(h)q.set('display_name_hint',h);
+    const d=await GET('/compare-ig-x2?'+q);
+    render('cmp', d);
+    msg('cmp-msg','✓ tamam');
+  }catch(x){renderError('cmp',x);msg('cmp-msg',x.message,false)}
+};
+
+// Hunt X
+$('hunt-btn').onclick=async()=>{
+  const n=$('hunt-name').value.trim();
+  if(!n){msg('hunt-msg','isim gir',false);return}
+  msg('hunt-msg','araniyor...');
+  try{
+    const q=new URLSearchParams({full_name:n,limit:$('hunt-limit').value||'30'});
+    const kw=$('hunt-kw').value.trim();
+    if(kw)q.set('kw',kw);
+    const d=await GET('/hunt-x-by-name?'+q);
+    render('hunt', d);
+    msg('hunt-msg','✓ tamam');
+  }catch(x){renderError('hunt',x);msg('hunt-msg',x.message,false)}
+};
+
+// EXIF
+$('exif-btn').onclick=async()=>{
+  const f=$('exif-file').files?.[0];
+  if(!f){msg('exif-msg','dosya sec',false);return}
+  msg('exif-msg','analiz ediliyor...');
+  try{
+    const fd=new FormData();fd.append('file',f);
+    const r=await fetch(baseUrl()+'/tester/exif',{method:'POST',body:fd,credentials:'same-origin'});
+    if(!r.ok)throw new Error(r.status);
+    const d=await r.json();
+    render('exif', d);
+    msg('exif-msg','✓ tamam');
+  }catch(x){renderError('exif',x);msg('exif-msg',x.message,false)}
+};
+$('exif-clear').onclick=()=>{
+  $('exif-file').value='';$('exif-json').textContent='';
+  $('exif-summary').classList.remove('show');$('exif-summary').innerHTML='';
+  msg('exif-msg','');
+};
+
+// Unified (PersonCard via POST /scan/full)
+$('uni-btn').onclick=async()=>{
+  const fn=$('uni-fname').value.trim();
+  const ln=$('uni-lname').value.trim();
+  const city=$('uni-city').value.trim();
+  if(!fn||!ln){msg('uni-msg','ad ve soyad gerekli',false);return}
+  const csv=s=>s.split(',').map(x=>x.trim()).filter(Boolean);
+  const body={
+    first_name:fn,
+    last_name:ln,
+    hometown:city||'',
+    hints:{
+      emails:csv($('uni-emails').value),
+      phones:csv($('uni-phones').value),
+      usernames:csv($('uni-usernames').value)
+    },
+    fast:$('uni-fast').checked,
+    timeout:30
+  };
+  msg('uni-msg','analiz ediliyor...');
+  try{
+    const d=await POST('/scan/full', body);
+    render('uni', d);
+    msg('uni-msg','✓ '+(d.profiles?.length||0)+' profil');
+  }catch(x){renderError('uni',x);msg('uni-msg',x.message,false)}
+};
+
+// Bios
+$('bios-btn').onclick=async()=>{
+  const u=$('bios-user').value.trim();
+  if(!u){msg('bios-msg','kullanici adi gir',false);return}
+  msg('bios-msg','yukleniyor...');
+  try{
+    const q=new URLSearchParams({username:u});
+    const o=$('bios-only').value.trim();
+    if(o)q.set('only',o);
+    const d=await GET('/username-bios?'+q);
+    render('bios', d);
+    msg('bios-msg','✓ tamam');
+  }catch(x){renderError('bios',x);msg('bios-msg',x.message,false)}
+};
+
+// Face
+$('face-btn').onclick=async()=>{
+  const f=$('face-file').files?.[0];
+  if(!f){msg('face-msg','dosya sec',false);return}
+  const eng=[];
+  if($('face-saucenao').checked)eng.push('saucenao');
+  if($('face-yandex').checked)eng.push('yandex');
+  if($('face-gv').checked)eng.push('google_vision');
+  if(!eng.length){msg('face-msg','motor sec',false);return}
+  msg('face-msg','araniyor...');
+  try{
+    const fd=new FormData();
+    fd.append('image',f);
+    fd.append('engines',eng.join(','));
+    fd.append('max_results','10');
+    const r=await fetch(baseUrl()+'/face/search',{method:'POST',body:fd,credentials:'same-origin'});
+    if(!r.ok)throw new Error(r.status);
+    const d=await r.json();
+    render('face', d);
+    msg('face-msg','✓ tamam');
+  }catch(x){renderError('face',x);msg('face-msg',x.message,false)}
+};
+$('face-clear').onclick=()=>{
+  $('face-file').value='';$('face-json').textContent='';
+  $('face-summary').classList.remove('show');$('face-summary').innerHTML='';
+  msg('face-msg','');
+};
+
+// Geo
+$('geo-btn').onclick=async()=>{
+  const f=$('geo-file').files?.[0];
+  if(!f){msg('geo-msg','dosya sec',false);return}
+  msg('geo-msg','analiz ediliyor...');
+  try{
+    const fd=new FormData();fd.append('image',f);
+    const ts=$('geo-ts').value.trim();
+    if(ts)fd.append('timestamp',ts);
+    const r=await fetch(baseUrl()+'/geo/analyze-photo',{method:'POST',body:fd,credentials:'same-origin'});
+    if(!r.ok)throw new Error(r.status);
+    const d=await r.json();
+    render('geo', d);
+    msg('geo-msg','✓ tamam');
+  }catch(x){renderError('geo',x);msg('geo-msg',x.message,false)}
+};
+
+// Report
+$('rp-btn').onclick=async()=>{
+  const e=$('rp-email').value.trim(),u=$('rp-username').value.trim(),p=$('rp-phone').value.trim();
+  if(!e&&!u&&!p){msg('rp-msg','en az bir alan doldur',false);return}
+  msg('rp-msg','PDF hazirlaniyor...');
+  try{
+    const q=new URLSearchParams();
+    if(e)q.set('email',e);if(u)q.set('username',u);if(p)q.set('phone',p);
+    const r=await fetch(baseUrl()+'/report/generate?'+q,{method:'POST',credentials:'same-origin'});
+    if(!r.ok)throw new Error(r.status);
+    const blob=await r.blob();
+    const url=URL.createObjectURL(blob);
+    const a=document.createElement('a');
+    a.href=url;a.download='footprint_'+(e||u||p)+'.pdf';a.click();
+    URL.revokeObjectURL(url);
+    msg('rp-msg','✓ indirildi');
+  }catch(x){msg('rp-msg',x.message,false)}
+};
+
+// Temporal
+$('ti-btn').onclick=async()=>{
+  const sk=$('ti-seed').value.trim();
+  if(!sk){msg('ti-msg','seed_key gir',false);return}
+  msg('ti-msg','analiz ediliyor...');
+  try{
+    const d=await POST('/temporal/analyze',{seed_key:sk,narrative:$('ti-narrative').checked});
+    const out={
+      seed_key:d.seed_key, computed_at:d.computed_at,
+      event_count:(d.events||[]).length, cluster_count:(d.clusters||[]).length,
+      anomaly_count:(d.anomalies||[]).length,
+      events:(d.events||[]).map(e=>({type:e.event_type,ts:e.timestamp,src:e.source})),
+      anomalies:(d.anomalies||[]).map(a=>({type:a.type,severity:a.severity,explanation:a.explanation})),
+      narrative:d.narrative||null,
+    };
+    render('ti', out);
+    msg('ti-msg',`✓ ${out.event_count} olay, ${out.anomaly_count} anomali`);
+  }catch(x){renderError('ti',x);msg('ti-msg',x.message,false)}
+};
+
+// Pivot
+$('pv-btn').onclick=async()=>{
+  const fid=$('pv-fid').value.trim(),sk=$('pv-seed').value.trim();
+  if(!fid||!sk){msg('pv-msg','her iki alanı doldur',false);return}
+  msg('pv-msg','pivot başlatılıyor...');
+  try{
+    const d=await POST('/pivot/run',{
+      seed_finding_id:fid,seed_key:sk,
+      max_depth:parseInt($('pv-depth').value),
+      dry_run:$('pv-dry').checked
+    });
+    render('pv', d);
+    const sid=d.session_id;
+    if(d.status==='completed'||d.status==='failed'||d.status==='timeout'){
+      msg('pv-msg',`${d.status} — ${(d.nodes_discovered||[]).length} node`);
+      return;
+    }
+    msg('pv-msg','çalışıyor, poll ediliyor...');
+    let tries=0;
+    const poll=setInterval(async()=>{
+      tries++;
+      try{
+        const s=await GET('/pivot/session/'+sid);
+        render('pv', s);
+        if(['completed','failed','timeout'].includes(s.status)||tries>=10){
+          clearInterval(poll);
+          msg('pv-msg',`${s.status} — ${(s.nodes_discovered||[]).length} node`);
+        }
+      }catch(e){clearInterval(poll);msg('pv-msg',e.message,false)}
+    },3000);
+  }catch(x){renderError('pv',x);msg('pv-msg',x.message,false)}
+};
+</script></body></html>

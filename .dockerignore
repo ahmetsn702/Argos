@@ -1,0 +1,50 @@
+# ============================================================================
+# .dockerignore — what NEVER goes into the image
+# ----------------------------------------------------------------------------
+# Secrets & local config
+.env
+.env.*
+!.env.example
+
+# Source-control noise
+.git
+.gitignore
+.gitattributes
+
+# Python build / cache artefacts
+**/__pycache__/
+**/*.pyc
+**/*.pyo
+**/*.pyd
+**/.pytest_cache/
+**/.mypy_cache/
+**/.ruff_cache/
+**/.coverage
+**/htmlcov/
+
+# Virtual environments
+**/.venv/
+**/venv/
+**/env/
+
+# OS/editor metadata
+**/.DS_Store
+**/Thumbs.db
+**/.idea/
+**/.vscode/
+
+# Node / frontend artefacts (none in repo today, but future-proof)
+**/node_modules/
+**/dist/
+**/build/
+
+# Runtime logs (kept out of image — mounted via compose volume)
+logs/
+**/*.log
+
+# Local docker artefacts
+docker-compose.override.yml
+
+# Existing dev/scripts that aren't needed at runtime
+START.ps1
+*.local.ps1

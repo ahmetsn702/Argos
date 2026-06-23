@@ -1,0 +1,39 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="utf-8"/>
+<title>FB Dump</title>
+<meta name="viewport" content="width=device-width, initial-scale=1"/>
+<style>
+  body{font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial; margin: 24px;}
+  .wrap{max-width: 1100px; margin: 0 auto;}
+  h1{font-size: 22px; margin-bottom: 12px;}
+  form{display:flex; gap:12px; flex-wrap:wrap; align-items:flex-end; margin: 16px 0 20px;}
+  label{display:flex; flex-direction:column; font-size:13px; gap:6px;}
+  input[type=text], input[type=number]{padding:8px 10px; border:1px solid #ddd; border-radius:8px; min-width:220px;}
+  button{padding:10px 14px; border:0; border-radius:10px; background:#111827; color:#fff; cursor:pointer}
+  .muted{color:#666; font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+<h1>Facebook Dump (mini dashboard)</h1>
+<form method="post" action="/fb/run">
+  <label>Username/Page
+    <input type="text" name="username" placeholder="spacex" required />
+  </label>
+  <label>Limit
+    <input type="number" name="limit" value="40" min="1" max="500" />
+  </label>
+  <label>FB_MIN_BYTES
+    <input type="number" name="min_bytes" value="120000" min="512" step="512" />
+  </label>
+  <label>Debug
+    <input type="text" name="debug" value="" placeholder="1 = on (opsiyonel)"/>
+  </label>
+  <button type="submit">Run dump</button>
+</form>
+<p class="muted">Not: Çalıştırınca /tmp/fb_{username} altında snapshot + görseller oluşur; zip ile indirebilirsin.</p>
+</div>
+</body>
+</html>

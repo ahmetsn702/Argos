@@ -1,0 +1,55 @@
+<!doctype html>
+<html><head><meta charset="utf-8"/><title>Footprint • Overview</title>
+<style>
+:root{--bg:#0b1220;--panel:#111a2b;--muted:#8592a3;--txt:#e7eefc;--acc:#4cc9f0}
+body{background:var(--bg);color:var(--txt);font:14px/1.45 system-ui,Segoe UI,Arial;margin:0}
+.wrap{max-width:1200px;margin:24px auto;padding:0 16px}
+.row{display:grid;grid-template-columns:repeat(12,1fr);gap:16px}
+.card{background:var(--panel);border-radius:14px;padding:14px 16px}
+.title{font-weight:600;margin-bottom:8px}.kv td:first-child{color:var(--muted);padding-right:10px}
+.kv td{padding:2px 0}.mono{white-space:pre-wrap;color:#bfe1ff;background:#0b1322;padding:8px;border-radius:10px}
+.btn{display:inline-block;padding:7px 10px;background:#16315a;color:#dff1ff;border-radius:10px;text-decoration:none}
+footer{margin:16px 0 8px;color:var(--muted);font-size:12px;text-align:center}
+</style></head>
+<body><div class="wrap">
+<h1>Footprint — Durum Panosu</h1>
+<div><a class="btn" href="/fb">FB Aracı</a></div>
+<div id="content" style="margin-top:16px">Yükleniyor...</div>
+<footer>Footprint OSINT v4.0</footer>
+</div>
+<script>
+fetch('/fb/overview-data').then(r=>r.json()).then(d=>{
+  document.getElementById('content').innerHTML=`
+  <div class="row">
+    <div class="card" style="grid-column:span 6">
+      <div class="title">Ortam</div>
+      <table class="kv">
+        <tr><td>OS</td><td>${d.env.os}</td></tr>
+        <tr><td>Python</td><td>${d.env.python}</td></tr>
+        <tr><td>CWD</td><td>${d.env.cwd}</td></tr>
+      </table>
+    </div>
+    <div class="card" style="grid-column:span 6">
+      <div class="title">Cookie (fb)</div>
+      <table class="kv">
+        <tr><td>Exists</td><td>${d.cookie.exists?'Yes':'No'}</td></tr>
+        ${Object.entries(d.cookie.keys||{}).map(([k,v])=>`<tr><td>${k}</td><td>${v}</td></tr>`).join('')}
+      </table>
+    </div>
+  </div>
+  <div class="row" style="margin-top:16px">
+    <div class="card" style="grid-column:span 12">
+      <div class="title">Docker</div>
+      <pre class="mono">${d.docker}</pre>
+    </div>
+  </div>
+  <div class="row" style="margin-top:16px">
+    <div class="card" style="grid-column:span 12">
+      <div class="title">Veri Klasörleri</div>
+      ${d.subdirs.map(s=>`<div><b>data/${s.name}</b> — ${s.count} dosya 
+        <a class="btn" href="/fb/zip?dir=${s.name}">ZIP</a></div>`).join('')||'Klasör bulunamadı'}
+    </div>
+  </div>`;
+}).catch(e=>{ document.getElementById('content').innerHTML='Veri yüklenemedi: '+e; });
+</script>
+</body></html>

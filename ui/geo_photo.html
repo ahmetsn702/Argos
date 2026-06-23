@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>GEO PHOTO ANALYZER // FOOTPRINT</title>
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Courier New', monospace;
+            background: #0a0a0a;
+            color: #00ff41;
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container { max-width: 1400px; margin: 0 auto; }
+        .header {
+            display: flex; align-items: center; gap: 16px;
+            border-bottom: 1px solid #1a3a1a; padding-bottom: 16px; margin-bottom: 24px;
+        }
+        .header h1 { font-size: 1.5rem; letter-spacing: 2px; }
+        .badge {
+            background: #1a1a2e; border: 1px solid #00ff41; border-radius: 4px;
+            padding: 2px 8px; font-size: 0.65rem; color: #39ff14;
+        }
+        .main-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+        @media (max-width: 900px) { .main-grid { grid-template-columns: 1fr; } }
+
+        /* Upload */
+        .upload-zone {
+            border: 2px dashed #1a3a1a; border-radius: 8px; padding: 48px 24px;
+            text-align: center; cursor: pointer; transition: all 0.2s;
+            background: #0d1117; min-height: 200px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        .upload-zone:hover, .upload-zone.dragover { border-color: #00ff41; background: #0a1a0a; }
+        .upload-zone .icon { font-size: 2.5rem; margin-bottom: 12px; opacity: 0.7; }
+        .upload-zone p { color: #4a8a4a; font-size: 0.85rem; }
+        .upload-zone .filename { color: #39ff14; margin-top: 8px; font-size: 0.8rem; }
+        .preview-img { max-width: 100%; max-height: 160px; margin-top: 12px; border-radius: 4px; }
+
+        /* Form */
+        .form-group { margin-top: 16px; }
+        .form-group label { display: block; font-size: 0.75rem; color: #4a8a4a; margin-bottom: 4px; }
+        .form-group input {
+            width: 100%; background: #0d1117; border: 1px solid #1a3a1a; border-radius: 4px;
+            padding: 8px 12px; color: #00ff41; font-family: inherit; font-size: 0.85rem;
+        }
+        .form-group input:focus { outline: none; border-color: #00ff41; }
+        .btn-analyze {
+            margin-top: 20px; width: 100%; padding: 12px; border: none; border-radius: 4px;
+            background: #00ff41; color: #0a0a0a; font-family: inherit; font-size: 1rem;
+            font-weight: bold; cursor: pointer; letter-spacing: 1px; transition: all 0.2s;
+        }
+        .btn-analyze:hover { background: #39ff14; box-shadow: 0 0 20px rgba(0,255,65,0.3); }
+        .btn-analyze:disabled { opacity: 0.4; cursor: not-allowed; }
+
+        /* Results */
+        .result-panel { background: #0d1117; border: 1px solid #1a3a1a; border-radius: 8px; padding: 20px; }
+        .result-panel.hidden { display: none; }
+        .source-badge {
+            display: inline-block; padding: 4px 10px; border-radius: 4px; font-size: 0.75rem;
+            font-weight: bold; margin-bottom: 16px;
+        }
+        .source-exif { background: #1a1a1a; border: 1px solid #ffffff; color: #ffffff; }
+        .source-plate_match { background: #1a0a2a; border: 1px solid #9b59b6; color: #9b59b6; }
+        .source-full_fusion { background: #0a2a0a; border: 1px solid #00ff41; color: #00ff41; }
+        .source-visual_fusion { background: #2a1a0a; border: 1px solid #f39c12; color: #f39c12; }
+        .source-solar_fusion { background: #0a1a2a; border: 1px solid #3498db; color: #3498db; }
+
+        .result-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #111; }
+        .result-row .label { color: #4a8a4a; font-size: 0.8rem; }
+        .result-row .value { color: #e0e0e0; font-size: 0.85rem; }
+
+        .confidence-bar { margin: 12px 0; }
+        .confidence-bar .bar-bg { width: 100%; height: 8px; background: #1a1a1a; border-radius: 4px; overflow: hidden; }
+        .confidence-bar .bar-fill {
+            height: 100%; background: linear-gradient(90deg, #ff4444, #ffaa00, #00ff41);
+            border-radius: 4px; transition: width 0.5s;
+        }
+        .confidence-bar .bar-label { font-size: 0.7rem; color: #4a8a4a; margin-top: 4px; }
+
+        /* Reasoning accordion */
+        .reasoning { margin-top: 16px; }
+        .reasoning summary { cursor: pointer; color: #39ff14; font-size: 0.8rem; padding: 6px 0; border-bottom: 1px solid #1a1a1a; }
+        .reasoning .content { padding: 8px 0; font-size: 0.75rem; color: #8a8a8a; }
+
+        /* Map */
+        #map { height: 350px; border-radius: 8px; border: 1px solid #1a3a1a; margin-top: 16px; }
+
+        /* Top3 candidates */
+        .top3-list { margin-top: 12px; }
+        .top3-list .top3-title { font-size: 0.75rem; color: #4a8a4a; margin-bottom: 6px; }
+        .top3-item {
+            font-size: 0.75rem; color: #aaa; padding: 6px 8px; margin-bottom: 4px;
+            background: #111; border-left: 3px solid #333; border-radius: 2px;
+        }
+        .top3-item .loc { color: #e0e0e0; }
+        .top3-item .conf { color: #f39c12; }
+        .top3-item .evidence { color: #666; font-size: 0.7rem; }
+
+        .spinner { display: inline-block; width: 16px; height: 16px; border: 2px solid #0a0a0a;
+            border-top-color: transparent; border-radius: 50%; animation: spin 0.6s linear infinite; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+        .error-msg { color: #ff4444; font-size: 0.8rem; margin-top: 12px; }
+        .copyable { cursor: pointer; position: relative; }
+        .copyable:hover { color: #39ff14; }
+        .copyable.copied::after {
+            content: 'Copied!'; position: absolute; right: -60px; top: 0;
+            font-size: 0.65rem; color: #00ff41; animation: fadeout 1.5s forwards;
+        }
+        @keyframes fadeout { 0% { opacity: 1; } 100% { opacity: 0; } }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>GEO PHOTO ANALYZER</h1>
+        <span class="badge">FOOTPRINT v4</span>
+    </div>
+
+    <div class="main-grid">
+        <div class="left-panel">
+            <div class="upload-zone" id="dropZone">
+                <div class="icon">📡</div>
+                <p>DROP IMAGE HERE or CLICK TO SELECT</p>
+                <p style="font-size:0.7rem;margin-top:6px;color:#333">JPG / PNG / WEBP</p>
+                <div class="filename" id="fileName"></div>
+                <img class="preview-img" id="previewImg" style="display:none" alt="preview">
+            </div>
+            <input type="file" id="fileInput" accept="image/*" style="display:none">
+
+            <div class="form-group">
+                <label>TIMESTAMP (optional, ISO 8601)</label>
+                <input type="text" id="timestamp" placeholder="2024-01-15T14:30:00Z">
+            </div>
+
+            <button class="btn-analyze" id="btnAnalyze" disabled>▶ ANALYZE</button>
+            <div class="error-msg" id="errorMsg"></div>
+        </div>
+
+        <div class="right-panel">
+            <div class="result-panel hidden" id="resultPanel">
+                <span class="source-badge" id="sourceBadge"></span>
+                <div class="result-row"><span class="label">LATITUDE</span><span class="value" id="rLat">—</span></div>
+                <div class="result-row"><span class="label">LONGITUDE</span><span class="value" id="rLng">—</span></div>
+                <div class="result-row"><span class="label">COORDINATES</span><span class="value copyable" id="rCoords" title="Click to copy">—</span></div>
+                <div class="result-row"><span class="label">COUNTRY</span><span class="value" id="rCountry">—</span></div>
+                <div class="result-row"><span class="label">REGION</span><span class="value" id="rRegion">—</span></div>
+                <div class="result-row"><span class="label">RADIUS</span><span class="value" id="rRadius">—</span></div>
+
+                <div class="confidence-bar">
+                    <div class="bar-bg"><div class="bar-fill" id="confBar" style="width:0%"></div></div>
+                    <div class="bar-label">CONFIDENCE: <span id="confVal">0%</span></div>
+                </div>
+
+                <div class="reasoning">
+                    <details><summary>☀ Solar Reasoning</summary><div class="content" id="rSolar">—</div></details>
+                    <details><summary>👁 Visual Reasoning</summary><div class="content" id="rVisual">—</div></details>
+                    <details><summary>⚡ Fusion Reasoning</summary><div class="content" id="rFusion">—</div></details>
+                </div>
+            </div>
+
+            <div id="map"></div>
+            <div class="top3-list hidden" id="top3Panel"></div>
+        </div>
+    </div>
+</div>
+
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<script>
+// Map init
+const map = L.map('map', { zoomControl: true }).setView([20, 0], 2);
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+    attribution: '© OpenStreetMap', maxZoom: 18
+}).addTo(map);
+
+let marker = null, circle = null;
+
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+const btnAnalyze = document.getElementById('btnAnalyze');
+const errorMsg = document.getElementById('errorMsg');
+let selectedFile = null;
+
+// Drag & drop
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+    e.preventDefault(); dropZone.classList.remove('dragover');
+    if (e.dataTransfer.files[0]) handleFile(e.dataTransfer.files[0]);
+});
+fileInput.addEventListener('change', e => { if (e.target.files[0]) handleFile(e.target.files[0]); });
+
+function handleFile(file) {
+    selectedFile = file;
+    document.getElementById('fileName').textContent = `> ${file.name} (${(file.size/1024).toFixed(1)} KB)`;
+    const img = document.getElementById('previewImg');
+    img.src = URL.createObjectURL(file); img.style.display = 'block';
+    btnAnalyze.disabled = false;
+    errorMsg.textContent = '';
+}
+
+// Analyze
+btnAnalyze.addEventListener('click', async () => {
+    if (!selectedFile) return;
+    btnAnalyze.disabled = true;
+    btnAnalyze.innerHTML = '<span class="spinner"></span> SCANNING...';
+    errorMsg.textContent = '';
+
+    const form = new FormData();
+    form.append('image', selectedFile);
+    const ts = document.getElementById('timestamp').value.trim();
+    if (ts) form.append('timestamp', ts);
+
+    try {
+        const resp = await fetch('http://127.0.0.1:8000/geo/analyze-photo', { method: 'POST', body: form });
+        if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
+        const data = await resp.json();
+        console.log(data);
+        renderResult(data);
+    } catch (e) {
+        errorMsg.textContent = `[ERROR] ${e.message}`;
+    } finally {
+        btnAnalyze.disabled = false;
+        btnAnalyze.textContent = '▶ ANALYZE';
+    }
+});
+
+function renderResult(d) {
+    if (!d) { errorMsg.textContent = '[ERROR] Empty response'; return; }
+
+    const panel = document.getElementById('resultPanel');
+    panel.classList.remove('hidden');
+
+    // Fallback
+    if (d.fallback === true) {
+        document.getElementById('sourceBadge').textContent = 'ANALYSIS FAILED';
+        document.getElementById('sourceBadge').className = 'source-badge source-solar_fusion';
+        document.getElementById('rLat').textContent = '—';
+        document.getElementById('rLng').textContent = '—';
+        document.getElementById('rCoords').textContent = '—';
+        document.getElementById('rCountry').textContent = '—';
+        document.getElementById('rRegion').textContent = '—';
+        document.getElementById('rRadius').textContent = '—';
+        document.getElementById('confBar').style.width = '0%';
+        document.getElementById('confVal').textContent = '0%';
+        document.getElementById('rSolar').textContent = d?.reasoning?.error || 'No signals available';
+        document.getElementById('rVisual').textContent = '—';
+        document.getElementById('rFusion').textContent = '—';
+        return;
+    }
+
+    // Source badge
+    const badge = document.getElementById('sourceBadge');
+    badge.textContent = (d?.source || 'unknown').toUpperCase().replace('_', ' ');
+    badge.className = `source-badge source-${d?.source || 'visual_fusion'}`;
+
+    // Fields
+    document.getElementById('rLat').textContent = d?.lat != null ? d.lat.toFixed(4) : '—';
+    document.getElementById('rLng').textContent = d?.lng != null ? d.lng.toFixed(4) : '—';
+    const coordsEl = document.getElementById('rCoords');
+    if (d?.lat != null && d?.lng != null) {
+        const coordStr = `${Math.abs(d.lat).toFixed(4)}° ${d.lat >= 0 ? 'N' : 'S'}, ${Math.abs(d.lng).toFixed(4)}° ${d.lng >= 0 ? 'E' : 'W'}`;
+        coordsEl.textContent = coordStr;
+        coordsEl.onclick = () => {
+            navigator.clipboard.writeText(coordStr);
+            coordsEl.classList.add('copied');
+            setTimeout(() => coordsEl.classList.remove('copied'), 1500);
+        };
+    } else { coordsEl.textContent = '—'; coordsEl.onclick = null; }
+    document.getElementById('rCountry').textContent = d?.country || '—';
+    document.getElementById('rRegion').textContent = d?.region || '—';
+    document.getElementById('rRadius').textContent = d?.radius_km ? `±${d.radius_km} km` : '—';
+
+    // Confidence
+    const pct = Math.round((d?.confidence || 0) * 100);
+    document.getElementById('confBar').style.width = pct + '%';
+    document.getElementById('confVal').textContent = pct + '%';
+
+    // Reasoning
+    const r = d?.reasoning || {};
+    document.getElementById('rSolar').textContent = r?.solar || '—';
+    document.getElementById('rVisual').textContent = r?.visual || '—';
+    document.getElementById('rFusion').textContent = r?.fusion || r?.method || '—';
+
+    // Map update
+    if (marker) { map.removeLayer(marker); marker = null; }
+    if (circle) { map.removeLayer(circle); circle = null; }
+
+    if (d?.lat != null && d?.lng != null) {
+        const src = d?.source || '';
+        let zoom = 5;
+        if (src === 'plate_match' || src === 'full_fusion') zoom = 10;
+        else if (src === 'visual_fusion') zoom = 7;
+        else if (src === 'exif') zoom = 14;
+
+        map.flyTo([d.lat, d.lng], zoom, { duration: 1.5 });
+
+        marker = L.marker([d.lat, d.lng]).addTo(map);
+        const coordFmt = `${Math.abs(d.lat).toFixed(4)}° ${d.lat >= 0 ? 'N' : 'S'}, ${Math.abs(d.lng).toFixed(4)}° ${d.lng >= 0 ? 'E' : 'W'}`;
+        marker.bindPopup(
+            `<b>📍 ${d.country || '?'} / ${d.region || '?'}</b><br>` +
+            `🎯 ${coordFmt}<br>` +
+            `Confidence: ${pct}%<br>` +
+            `±${d.radius_km || '?'} km radius<br>` +
+            `Source: <code>${d.source}</code>`
+        ).openPopup();
+
+        if (d.radius_km) {
+            circle = L.circle([d.lat, d.lng], {
+                radius: d.radius_km * 1000,
+                color: '#ff4444', fillColor: '#ff4444', fillOpacity: 0.1, weight: 1
+            }).addTo(map);
+        }
+    }
+
+    // Top3 candidates
+    const top3El = document.getElementById('top3Panel');
+    if (d?.top3_candidates && d.top3_candidates.length > 0) {
+        top3El.classList.remove('hidden');
+        top3El.innerHTML = '<div class="top3-title">▸ TOP 3 CANDIDATES</div>' +
+            d.top3_candidates.map((c, i) =>
+                `<div class="top3-item">` +
+                `<span class="loc">#${i+1} ${c.location}</span> — ` +
+                `<span class="conf">${Math.round((c.confidence||0)*100)}%</span><br>` +
+                `<span class="evidence">+ ${c.evidence_for || '—'} / − ${c.evidence_against || '—'}</span>` +
+                `</div>`
+            ).join('');
+    } else {
+        top3El.classList.add('hidden');
+        top3El.innerHTML = '';
+    }
+}
+</script>
+</body>
+</html>

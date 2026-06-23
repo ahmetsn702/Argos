@@ -1,0 +1,657 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ARGOS � OSINT Intelligence</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries">  function toggleSidebar() {
+    var s = document.getElementById('sidebar');
+    if (s) s.classList.toggle('sidebar-open');
+  }</script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bg": "#0a0e0b",
+                        "surface": "#0f1712",
+                        "surface-2": "#0a130f",
+                        "accent": "#2ecc71",
+                        "accent-bright": "#00f08a",
+                        "text-primary": "#e9fff6",
+                        "text-secondary": "#7ddfb2",
+                        "danger": "#ff4444",
+                        "warning": "#ffaa00",
+                        "border": "#1b2a20",
+                    },
+                    borderRadius: {
+                        "DEFAULT": "4px",
+                        "lg": "4px",
+                        "xl": "8px",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["JetBrains Mono", "monospace"],
+                        "display": ["JetBrains Mono", "monospace"],
+                        "body": ["JetBrains Mono", "monospace"],
+                        "label": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+      function toggleSidebar() {
+    var s = document.getElementById('sidebar');
+    if (s) s.classList.toggle('sidebar-open');
+  }</script>
+<style>
+        body {
+            background-color: #0a0e0b;
+            font-family: 'JetBrains Mono', monospace;
+            color: #e9fff6;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 99;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(46, 204, 113, 0.02) 50%, rgba(0, 0, 0, 0) 100%);
+            opacity: 0.1;
+            position: absolute;
+            bottom: 100%;
+            animation: scanline 10s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { bottom: 100%; }
+            100% { bottom: -100px; }
+        }
+
+        .glow-green {
+            box-shadow: 0 0 12px rgba(46, 204, 113, 0.25);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0a0e0b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1b2a20;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #2ecc71;
+        }
+
+        .terminal-cursor {
+            display: inline-block;
+            width: 8px;
+            height: 16px;
+            background: #2ecc71;
+            margin-left: 4px;
+            animation: blink 1s step-end infinite;
+            vertical-align: middle;
+        }
+
+        @keyframes blink {
+            from, to { opacity: 1; }
+            50% { opacity: 0; }
+        }
+
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+      @media (max-width: 768px) {
+    #sidebar { transform: translateX(-100%); transition: transform 0.2s ease; position: fixed; z-index: 50; }
+    #sidebar.sidebar-open { transform: translateX(0); }
+    #main-content { margin-left: 0 !important; }
+    #hamburger { display: flex; }
+  }
+  @media (min-width: 769px) { #hamburger { display: none; } }</style>
+</head>
+<body class="flex h-screen overflow-hidden selection:bg-[#2ecc71] selection:text-[#0a0e0b]">
+<button id="hamburger" onclick="toggleSidebar()" style="display:none" class="fixed top-3 left-3 z-[60] text-[#2ecc71] font-mono text-xl bg-[#0a0e0b] border border-[#1b2a20] px-2 py-1 leading-none hover:bg-[#1b2a20] transition-colors">&#9776;</button>
+<div class="scanline pointer-events-none"></div>
+<!-- SideNavBar (JSON Component) -->
+<aside class="fixed left-0 top-0 h-full flex flex-col w-[240px] border-r border-[#1b2a20] bg-[#0a0e0b] z-50" id="sidebar">
+<!-- Logo Section -->
+<div class="p-6 flex flex-col gap-1">
+<div class="flex items-center gap-3">
+<div class="w-2 h-2 rounded-full bg-[#2ecc71] animate-pulse shadow-[0_0_8px_#2ecc71]"></div>
+<h1 class="text-xl font-bold text-[#2ecc71] tracking-[0.2em] font-['JetBrains_Mono'] uppercase">ARGOS</h1>
+</div>
+<div class="text-[10px] tracking-[0.4em] text-[#7ddfb2] opacity-60 ml-5">OSINT // SYSTEM ACTIVE</div>
+</div>
+<!-- Modules Section -->
+<div class="px-6 py-2">
+<span class="text-[10px] text-[#7ddfb2] opacity-40 font-bold tracking-[0.2em]">MODULES</span>
+</div>
+<!-- Navigation -->
+<nav class="flex-1 overflow-y-auto custom-scrollbar px-2 py-2">
+<div class="space-y-1">
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="#">
+<span class="material-symbols-outlined text-[18px]">dashboard</span>
+                    Overview
+                </a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="#">
+<span class="material-symbols-outlined text-[18px]">phone_iphone</span>
+                    Phone Lookup
+                </a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="#">
+<span class="material-symbols-outlined text-[18px]">security</span>
+                    Dark Web
+                </a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="#">
+<span class="material-symbols-outlined text-[18px]">language</span>
+                    Domain Search
+                </a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="#">
+<span class="material-symbols-outlined text-[18px]">alternate_email</span>
+                    Email OSINT
+                </a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="#">
+<span class="material-symbols-outlined text-[18px]">location_on</span>
+                    Geo Photo
+                </a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="#">
+<span class="material-symbols-outlined text-[18px]">face</span>
+                    Face Search
+                </a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="#">
+<span class="material-symbols-outlined text-[18px]">link</span>
+                    Correlation
+                </a>
+<!-- Active Tab -->
+<a class="text-[#00f08a] bg-[#0f1712] border-l-2 border-[#2ecc71] font-bold p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px]" href="#">
+<span class="material-symbols-outlined text-[18px]">psychology</span>
+                    LLM Analysis
+                </a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center justify-between transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="#">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[18px]">visibility</span>
+                    Watchlist
+</div>
+<span id="watchlist-badge" class="hidden bg-[#ff4444] text-[#0a0e0b] text-[9px] font-extrabold px-1.5 py-0.5 rounded-full min-w-[18px] text-center">0</span>
+</a>
+<a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="#">
+<span class="material-symbols-outlined text-[18px]">description</span>
+                    Report
+                </a>
+</div>
+</nav>
+<!-- Footer -->
+<div class="p-4 border-t border-[#1b2a20] space-y-4">
+<button class="w-full bg-[#2ecc71] text-[#0a0e0b] font-black py-3 rounded-sm text-[12px] tracking-widest hover:bg-[#00f08a] transition-all glow-green" id="btn-run-scan">
+                RUN SCAN
+            </button>
+<div class="flex justify-between items-center text-[9px] text-[#7ddfb2] opacity-50 uppercase tracking-widest">
+<span>V4.0 STABLE</span>
+<span>ENC: AES-256</span>
+</div>
+</div>
+</aside>
+<!-- Main Content Cluster -->
+<main id="main-content" class="ml-[240px] flex-1 flex flex-col h-screen overflow-hidden">
+<!-- TopAppBar (JSON Component) -->
+<header class="sticky top-0 z-50 flex justify-between items-center px-6 py-3 bg-[#0a0e0b]/90 backdrop-blur-md border-b border-[#1b2a20] shadow-[0_0_12px_rgba(46,204,113,0.15)]">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 text-[10px] font-['JetBrains_Mono'] text-[#7ddfb2] opacity-60">
+<span>DASHBOARD</span>
+<span class="material-symbols-outlined text-[14px]">chevron_right</span>
+<span class="text-[#2ecc71] font-bold">OVERVIEW</span>
+</div>
+<div class="h-4 w-px bg-[#1b2a20] mx-2"></div>
+<div class="flex items-center gap-4">
+<div class="text-[#00f08a] border border-[#2ecc71] px-2 py-0.5 rounded-sm text-[10px] font-['JetBrains_Mono']" id="status-api">API: ONLINE</div>
+<div class="text-[#7ddfb2] opacity-80 text-[10px] font-['JetBrains_Mono']" id="status-redis">REDIS: ACTIVE</div>
+<div class="text-[#7ddfb2] opacity-80 text-[10px] font-['JetBrains_Mono']" id="status-gemini">GEMINI: READY</div>
+</div>
+</div>
+<div class="flex-1 max-w-xl mx-8 relative">
+<div class="bg-[#0f1712] border border-[#1b2a20] px-4 py-2 rounded flex items-center gap-3">
+<span class="text-[#2ecc71] text-[12px] font-bold">&gt;</span>
+<span class="text-[#e9fff6] text-[12px] font-medium tracking-tight">active target:</span>
+<input id="active-target" type="text" class="bg-transparent flex-1 text-[#2ecc71] text-[12px] font-bold outline-none placeholder:text-[#7ddfb2] placeholder:opacity-50 border-0" placeholder="email or username..." autocomplete="off"/>
+<span class="terminal-cursor"></span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-[#2ecc71]">
+<span class="material-symbols-outlined cursor-pointer hover:scale-110 transition-transform">notifications_active</span>
+<span class="material-symbols-outlined cursor-pointer hover:scale-110 transition-transform">account_tree</span>
+</div>
+<div class="flex items-center gap-3 pl-4 border-l border-[#1b2a20]">
+<div class="text-right">
+<div class="text-[11px] font-bold text-[#e9fff6]">OP_0021</div>
+<div class="text-[9px] text-[#7ddfb2] opacity-60 uppercase">Admin Access</div>
+</div>
+<img alt="Admin Avatar" class="w-8 h-8 rounded-sm border border-[#2ecc71]" data-alt="A stylized portrait of a person in a futuristic, dark tech environment. The subject's face is partially obscured by neon green digital UI elements and glowing data strands. The lighting is low-key with intense green highlights, creating a sharp hacker aesthetic against a pitch-black background. The mood is mysterious, professional, and advanced." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDBU2Lwv1ihWn8Su21Gsq2OL0ZSFrT9mHKY3ixXo-wwCJ5wgs193tvRcI8zTpxEtxy_jdf-HrTQuoUuj4QLfyIX5pnSNolqz3bEus3T5zNl5Z1OVGe4bocAUlcZNwMMBp-G09K3PtezTTKCxT1Q0xq5LEl5weS6BJRHgZbh6k6sydzmunnsKBkKwDZEu9QkHKls4SLgk7TBxycxwDtJhP3WLpDiR-jf75NlCBLTtKom8S7pLHzTrz37qy-lNOMga_6K2pYFi8big6vK"/>
+</div>
+</div>
+</header>
+<!-- Main Workspace -->
+<section class="flex-1 overflow-y-auto p-6 custom-scrollbar space-y-6">
+<!-- Row 1: Metric Grid -->
+<div class="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+<!-- Total Modules -->
+<div class="bg-[#0f1712] border border-[#1b2a20] p-4 flex flex-col gap-2 hover:border-[#2ecc71]/50 transition-all">
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-[#7ddfb2] font-bold uppercase tracking-widest">Modules</span>
+<span class="material-symbols-outlined text-[#2ecc71] text-[16px]">terminal</span>
+</div>
+<div class="flex items-end gap-2">
+<span class="text-3xl font-black text-[#2ecc71]" id="m-modules">09</span>
+<span class="text-[10px] text-[#7ddfb2] pb-1 uppercase">Active</span>
+</div>
+</div>
+<!-- Risk Score -->
+<div class="bg-[#0f1712] border border-[#1b2a20] p-4 flex flex-col gap-2 hover:border-[#ffaa00]/50 transition-all">
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-[#7ddfb2] font-bold uppercase tracking-widest">Risk Score</span>
+<span class="material-symbols-outlined text-[#ffaa00] text-[16px]">warning</span>
+</div>
+<div class="flex items-end gap-2">
+<span class="text-3xl font-black text-[#ffaa00]" id="m-risk">67</span>
+<span class="text-[10px] text-[#ffaa00] pb-1 uppercase font-bold">HIGH</span>
+</div>
+</div>
+<!-- Active Alerts -->
+<div class="bg-[#0f1712] border border-[#1b2a20] p-4 flex flex-col gap-2 hover:border-[#ff4444]/50 transition-all relative overflow-hidden">
+<div class="absolute top-0 right-0 w-12 h-12 -mr-6 -mt-6 bg-[#ff4444]/10 rotate-45"></div>
+<div class="flex items-center justify-between relative z-10">
+<span class="text-[10px] text-[#7ddfb2] font-bold uppercase tracking-widest">Alerts</span>
+<div class="w-2 h-2 rounded-full bg-[#ff4444] animate-ping"></div>
+</div>
+<div class="flex items-end gap-2 relative z-10">
+<span class="text-3xl font-black text-[#ff4444]" id="m-alerts">12</span>
+<span class="text-[10px] text-[#7ddfb2] pb-1 uppercase">24h Peak</span>
+</div>
+</div>
+<!-- Breaches Found -->
+<div class="bg-[#0f1712] border border-[#1b2a20] p-4 flex flex-col gap-2 hover:border-[#2ecc71]/50 transition-all">
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-[#7ddfb2] font-bold uppercase tracking-widest">Breaches</span>
+<span class="material-symbols-outlined text-[#2ecc71] text-[16px]">database</span>
+</div>
+<div class="flex items-end gap-2">
+<span class="text-3xl font-black text-[#e9fff6]" id="m-breaches">04</span>
+<span class="text-[10px] text-[#7ddfb2] pb-1 uppercase">Sources</span>
+</div>
+</div>
+<!-- Locations Detected -->
+<div class="bg-[#0f1712] border border-[#1b2a20] p-4 flex flex-col gap-2 hover:border-[#2ecc71]/50 transition-all">
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-[#7ddfb2] font-bold uppercase tracking-widest">Geo Points</span>
+<span class="material-symbols-outlined text-[#2ecc71] text-[16px]">explore</span>
+</div>
+<div class="flex items-end gap-2">
+<span class="text-3xl font-black text-[#e9fff6]" id="m-geo">02</span>
+<span class="text-[10px] text-[#7ddfb2] pb-1 uppercase">Verified</span>
+</div>
+</div>
+<!-- Social Profiles -->
+<div class="bg-[#0f1712] border border-[#1b2a20] p-4 flex flex-col gap-2 hover:border-[#2ecc71]/50 transition-all">
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-[#7ddfb2] font-bold uppercase tracking-widest">Socials</span>
+<span class="material-symbols-outlined text-[#2ecc71] text-[16px]">share</span>
+</div>
+<div class="flex items-end gap-2">
+<span class="text-3xl font-black text-[#e9fff6]" id="m-socials">07</span>
+<span class="text-[10px] text-[#7ddfb2] pb-1 uppercase">Linked</span>
+</div>
+</div>
+</div>
+<!-- Main Interactive Section -->
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Left: Visual Intel -->
+<div class="lg:col-span-2 space-y-6">
+<div class="bg-[#0f1712] border border-[#1b2a20] p-1 h-[400px] relative group overflow-hidden">
+<div class="absolute inset-0 bg-[#00f08a]/5 pointer-events-none z-10 opacity-0 group-hover:opacity-100 transition-opacity"></div>
+<div class="absolute top-4 left-4 z-20 space-y-2">
+<div class="bg-[#0a0e0b]/80 border border-[#2ecc71] px-2 py-1 text-[10px] font-bold text-[#2ecc71]">LIVE TARGET MAP</div>
+<div class="bg-[#0a0e0b]/80 border border-[#1b2a20] px-2 py-1 text-[9px] text-[#7ddfb2]">COORD: 40.7128° N, 74.0060° W</div>
+</div>
+<div class="w-full h-full bg-[#0a130f] flex items-center justify-center overflow-hidden grayscale contrast-125 brightness-50 opacity-40 group-hover:opacity-60 transition-opacity">
+<img alt="Network Map" class="w-full h-full object-cover" data-alt="A top-down satellite view of a metropolitan city grid at night, stylized with glowing neon green digital data overlays and tactical markers. The image is rendered in high contrast with deep blacks and vibrant green outlines, suggesting a surveillance or OSINT interface. Sharp lines connect various data points across the urban landscape, creating a complex web of intelligence." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBxcEa2lCICwN9PSbFjhrwPdQr48eRP3veDceVfVLPJS16FeBRYL5dKu_0wipJ3qqmhCHSju7hxkg2PMVjK34K9qbVwarbEZzvbSFIxwRMaQaZQB0-lH5CxRn4zkpPH41uIT05o0TyHf1NlZoZbZla3QCXS5Z1a8KuHTAN8EgqLH1GQTjD4xwD0gaZsA8FcE6fYU692Vo-h8l0-dsJ3Daz9z8sFQzsoFiZ1zIhEuvjzv3OJUyrBn1YNbC5tytJaZgMVYu97knSZlTod"/>
+</div>
+<!-- UI Overlay Pins -->
+<div class="absolute inset-0 z-10 pointer-events-none">
+<div class="absolute top-1/3 left-1/2 -translate-x-1/2 -translate-y-1/2">
+<div class="w-12 h-12 border-2 border-[#2ecc71] rounded-full animate-ping opacity-50"></div>
+<div class="w-4 h-4 bg-[#2ecc71] rounded-full absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 shadow-[0_0_10px_#2ecc71]"></div>
+</div>
+</div>
+</div>
+<!-- Row 2: Recent Activity wide card -->
+<div class="bg-[#0f1712] border border-[#1b2a20] overflow-hidden">
+<div class="flex items-center justify-between px-4 py-3 border-b border-[#1b2a20] bg-[#0a130f]">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-[#2ecc71] text-[18px]">list_alt</span>
+<h2 class="text-[11px] font-black uppercase tracking-widest">RECENT ACTIVITY LOG</h2>
+</div>
+<div class="flex items-center gap-2">
+<div class="text-[9px] text-[#7ddfb2] px-2 py-0.5 border border-[#1b2a20]">AUTO-REFRESH: ON</div>
+<span class="material-symbols-outlined text-[14px] text-[#7ddfb2] cursor-pointer">sync</span>
+</div>
+</div>
+<div class="p-0 font-['JetBrains_Mono'] text-[11px]">
+<table class="w-full text-left">
+<thead class="bg-[#0a0e0b] text-[#7ddfb2] opacity-60">
+<tr>
+<th class="px-4 py-2 font-medium">TIMESTAMP</th>
+<th class="px-4 py-2 font-medium">MODULE</th>
+<th class="px-4 py-2 font-medium">TARGET</th>
+<th class="px-4 py-2 font-medium">STATUS</th>
+<th class="px-4 py-2 font-medium text-right">TIME</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-[#1b2a20]" id="activity-log">
+<tr class="hover:bg-[#1b2a20]/30 transition-colors">
+<td class="px-4 py-3 text-[#7ddfb2]">[00:14:32]</td>
+<td class="px-4 py-3 text-[#e9fff6]">DARKWEB/SCAN</td>
+<td class="px-4 py-3 opacity-80">j.doe@proton.me</td>
+<td class="px-4 py-3"><span class="text-[#2ecc71] font-bold">[ OK ]</span> <span class="ml-2 text-[#7ddfb2]">3 HITS</span></td>
+<td class="px-4 py-3 text-right text-[#7ddfb2]">420ms</td>
+</tr>
+<tr class="hover:bg-[#1b2a20]/30 transition-colors">
+<td class="px-4 py-3 text-[#7ddfb2]">[00:13:58]</td>
+<td class="px-4 py-3 text-[#e9fff6]">LLM/CORRELATE</td>
+<td class="px-4 py-3 opacity-80">ENTITY_LINK_04</td>
+<td class="px-4 py-3"><span class="text-[#ffaa00] font-bold">[ WARN ]</span> <span class="ml-2 text-[#7ddfb2]">AMBIGUOUS</span></td>
+<td class="px-4 py-3 text-right text-[#7ddfb2]">1.2s</td>
+</tr>
+<tr class="hover:bg-[#1b2a20]/30 transition-colors bg-[#ff4444]/5">
+<td class="px-4 py-3 text-[#7ddfb2]">[00:12:15]</td>
+<td class="px-4 py-3 text-[#ff4444]">PHONE/LOOKUP</td>
+<td class="px-4 py-3 text-[#ff4444]">+1 (555) 012...</td>
+<td class="px-4 py-3"><span class="text-[#ff4444] font-bold">[ FAIL ]</span> <span class="ml-2 text-[#7ddfb2]">RISK=HIGH</span></td>
+<td class="px-4 py-3 text-right text-[#7ddfb2]">85ms</td>
+</tr>
+<tr class="hover:bg-[#1b2a20]/30 transition-colors">
+<td class="px-4 py-3 text-[#7ddfb2]">[00:11:44]</td>
+<td class="px-4 py-3 text-[#e9fff6]">DOMAIN/DNS</td>
+<td class="px-4 py-3 opacity-80">example-repo.io</td>
+<td class="px-4 py-3"><span class="text-[#2ecc71] font-bold">[ OK ]</span> <span class="ml-2 text-[#7ddfb2]">RESOLVED</span></td>
+<td class="px-4 py-3 text-right text-[#7ddfb2]">310ms</td>
+</tr>
+</tbody>
+</table>
+</div>
+</div>
+</div>
+<!-- Right: Analysis Panel -->
+<div class="space-y-6">
+<!-- LLM Analysis Component -->
+<div class="bg-[#0f1712] border border-[#2ecc71] flex flex-col h-full glow-green">
+<div class="p-4 border-b border-[#2ecc71]/30 bg-[#2ecc71]/5 flex items-center justify-between">
+<div class="flex items-center gap-2">
+<span class="material-symbols-outlined text-[#2ecc71] text-[20px]">psychology</span>
+<span class="text-[11px] font-black uppercase tracking-widest text-[#2ecc71]">LLM ANALYSIS READY</span>
+</div>
+<span class="w-2 h-2 rounded-full bg-[#2ecc71] animate-pulse"></span>
+</div>
+<div class="p-4 flex-1 space-y-4 font-['JetBrains_Mono'] text-[12px] leading-relaxed">
+<div class="text-[#7ddfb2] italic">Analyzing data points for john.doe@example.com...</div>
+<div class="p-3 bg-[#0a0e0b] border border-[#1b2a20] rounded-sm">
+<p class="text-[#e9fff6] mb-2"><span class="text-[#2ecc71] font-bold">&gt; </span>Target shows consistent activity across 4 platforms. Geographic clusters suggest movement between New York and London.</p>
+<p class="text-[#e9fff6]"><span class="text-[#2ecc71] font-bold">&gt; </span>Dark web hits indicate potential credential exposure from 2022 Breach "X-Corp".</p>
+</div>
+<div class="space-y-2">
+<div class="flex justify-between text-[10px] uppercase">
+<span class="text-[#7ddfb2]">Confidence Interval</span>
+<span class="text-[#2ecc71]">84%</span>
+</div>
+<div class="h-1 bg-[#1b2a20] w-full">
+<div class="h-full bg-[#2ecc71] w-[84%] glow-green"></div>
+</div>
+</div>
+</div>
+<div class="p-4 border-t border-[#1b2a20] bg-[#0a130f]">
+<div class="relative">
+<input class="w-full bg-[#0a0e0b] border border-[#1b2a20] text-[11px] px-4 py-3 text-[#e9fff6] focus:border-[#2ecc71] focus:ring-0 placeholder:opacity-30" placeholder="ASK SYSTEM..." type="text"/>
+<button class="absolute right-2 top-1/2 -translate-y-1/2 text-[#2ecc71]">
+<span class="material-symbols-outlined">send</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Risk Gauge (Visual Component) -->
+<div class="bg-[#0f1712] border border-[#1b2a20] p-6 flex flex-col items-center justify-center gap-4">
+<div class="relative w-32 h-32 flex items-center justify-center">
+<svg class="w-full h-full -rotate-90">
+<circle cx="64" cy="64" fill="transparent" r="58" stroke="#1b2a20" stroke-width="8"></circle>
+<circle class="drop-shadow-[0_0_8px_#ffaa00]" cx="64" cy="64" fill="transparent" r="58" stroke="#ffaa00" stroke-dasharray="364.4" stroke-dashoffset="120" stroke-linecap="butt" stroke-width="8"></circle>
+</svg>
+<div class="absolute inset-0 flex flex-col items-center justify-center">
+<span class="text-3xl font-black text-[#e9fff6]">67</span>
+<span class="text-[9px] text-[#ffaa00] font-bold">STRESS %</span>
+</div>
+</div>
+<div class="text-center">
+<div class="text-[11px] font-black uppercase text-[#e9fff6]">THREAT LEVEL: MODERATE</div>
+<div class="text-[9px] text-[#7ddfb2] opacity-60">Last updated: 2 mins ago</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+</main>
+<script>
+// ─── Footprint OSINT — Dashboard integration ─────────────────────────────
+const BASE = "http://localhost:8000";
+function escapeHtml(s) {
+  if (s == null) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+const STORAGE_TARGET = "argos.target";
+
+const NAV_MAP = {
+  "overview": "/stitch/dashboard.html",
+  "phone lookup": "/stitch/profile.html#phone",
+  "dark web": "/stitch/profile.html#darkweb",
+  "domain search": "/stitch/profile.html#domain",
+  "email osint": "/stitch/profile.html#email",
+  "geo photo": "/stitch/profile.html#geo",
+  "face search": "/stitch/profile.html#face",
+  "metadata": "/stitch/profile.html#meta",
+  "target profile": "/stitch/profile.html",
+  "correlation": "/stitch/correlation.html",
+  "llm analysis": "/stitch/llm_analysis.html",
+  "watchlist": "/stitch/watchlist.html",
+  "report": "/stitch/report.html",
+};
+
+function wireSidebar() {
+  document.querySelectorAll("aside a").forEach(a => {
+    const t = a.textContent.replace(/\s+/g, ' ').trim().toLowerCase();
+    for (const key in NAV_MAP) {
+      if (t.includes(key)) { a.href = NAV_MAP[key]; break; }
+    }
+  });
+}
+
+async function api(method, path, body) {
+  const opts = { method, headers: { "Accept": "application/json" } };
+  if (body !== undefined) {
+    opts.headers["Content-Type"] = "application/json";
+    opts.body = JSON.stringify(body);
+  }
+  const r = await fetch(BASE + path, opts);
+  if (!r.ok) throw new Error(r.status + " " + r.statusText);
+  return r.json();
+}
+
+function setPill(el, text, color) {
+  if (!el) return;
+  el.textContent = text;
+  el.style.color = color;
+  el.style.borderColor = color;
+}
+
+function appendActivity(module, target, status, ms) {
+  const tbody = document.getElementById("activity-log");
+  if (!tbody) return;
+  const tr = document.createElement("tr");
+  tr.className = "hover:bg-[#1b2a20]/30 transition-colors";
+  const time = new Date().toLocaleTimeString("en-GB", { hour12: false });
+  const colors = { OK: "#2ecc71", FAIL: "#ff4444", WARN: "#ffaa00", ERR: "#ff4444" };
+  const c = colors[status] || "#7ddfb2";
+  tr.innerHTML =
+    '<td class="px-4 py-3 text-[#7ddfb2]">[' + time + ']</td>' +
+    '<td class="px-4 py-3 text-[#e9fff6]">' + escapeHtml(module) + '</td>' +
+    '<td class="px-4 py-3 opacity-80">' + escapeHtml(target || "-") + '</td>' +
+    '<td class="px-4 py-3"><span style="color:' + c + '" class="font-bold">[ ' + escapeHtml(status) + ' ]</span></td>' +
+    '<td class="px-4 py-3 text-right text-[#7ddfb2]">' + escapeHtml(ms) + 'ms</td>';
+  tbody.insertBefore(tr, tbody.firstChild);
+  while (tbody.children.length > 12) tbody.removeChild(tbody.lastChild);
+}
+
+async function checkHealth() {
+  // API ping
+  try {
+    const t0 = performance.now();
+    await api("GET", "/__ping");
+    setPill(document.getElementById("status-api"), "API: ONLINE", "#2ecc71");
+    appendActivity("__PING", "system", "OK", Math.round(performance.now() - t0));
+  } catch (e) {
+    setPill(document.getElementById("status-api"), "API: OFFLINE", "#ff4444");
+    appendActivity("__PING", "system", "FAIL", 0);
+  }
+  // Redis (no dedicated endpoint, mark idle)
+  setPill(document.getElementById("status-redis"), "REDIS: IDLE", "#7ddfb2");
+  // Gemini via /analysis/health
+  try {
+    const r = await api("GET", "/analysis/health");
+    if (r.api_key) {
+      setPill(document.getElementById("status-gemini"), "GEMINI: READY", "#2ecc71");
+    } else {
+      setPill(document.getElementById("status-gemini"), "GEMINI: NO_KEY", "#ffaa00");
+    }
+  } catch (e) {
+    setPill(document.getElementById("status-gemini"), "GEMINI: OFFLINE", "#ff4444");
+  }
+}
+
+function updateMetric(id, value) {
+  const el = document.getElementById(id);
+  if (el) el.textContent = value;
+}
+
+function deriveMetrics(scan) {
+  // /scan/full returns nested module results — counts and signals
+  const results = (scan && (scan.results || scan)) || {};
+  const moduleKeys = Object.keys(results).filter(k => typeof results[k] === "object");
+  updateMetric("m-modules", String(moduleKeys.length).padStart(2, "0"));
+
+  // breaches: try common shapes
+  let breaches = 0;
+  const dw = results.darkweb || results.darkweb_lookup || {};
+  if (dw && dw.summary && typeof dw.summary.total_breaches === "number") breaches = dw.summary.total_breaches;
+  if (Array.isArray(results.breaches)) breaches = results.breaches.length;
+  updateMetric("m-breaches", String(breaches).padStart(2, "0"));
+
+  // socials: count platforms in username-bios style
+  let socials = 0;
+  const bios = results.bios || results.username_bios || {};
+  if (bios && bios.platforms) socials = Object.keys(bios.platforms).length;
+  if (Array.isArray(results.platforms)) socials = results.platforms.length;
+  updateMetric("m-socials", String(socials).padStart(2, "0"));
+
+  // geo
+  let geo = 0;
+  if (results.geo && results.geo.lat) geo = 1;
+  if (Array.isArray(results.locations)) geo = results.locations.length;
+  updateMetric("m-geo", String(geo).padStart(2, "0"));
+
+  // alerts (best-effort)
+  const alerts = (breaches || 0) + (results.alerts ? results.alerts.length : 0);
+  updateMetric("m-alerts", String(alerts).padStart(2, "0"));
+
+  // risk score: keep existing if not provided
+  if (typeof scan.risk_score === "number") updateMetric("m-risk", String(scan.risk_score));
+}
+
+async function runScan() {
+  const input = document.getElementById("active-target");
+  const btn = document.getElementById("btn-run-scan");
+  const target = ((input ? input.value : "") || sessionStorage.getItem(STORAGE_TARGET) || "").trim();
+  if (!target) {
+    appendActivity("scan/full", "<empty>", "FAIL", 0);
+    return;
+  }
+  sessionStorage.setItem(STORAGE_TARGET, target);
+  const isEmail = target.includes("@");
+  const param = isEmail ? "email=" + encodeURIComponent(target) : "username=" + encodeURIComponent(target);
+  btn.disabled = true;
+  const oldText = btn.textContent;
+  btn.textContent = "RUNNING...";
+  const t0 = performance.now();
+  try {
+    const data = await api("GET", "/scan/full?" + param);
+    const ms = Math.round(performance.now() - t0);
+    appendActivity("scan/full", target, "OK", ms);
+    deriveMetrics(data);
+  } catch (e) {
+    const ms = Math.round(performance.now() - t0);
+    appendActivity("scan/full", target, "FAIL", ms);
+  } finally {
+    btn.disabled = false;
+    btn.textContent = oldText;
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  wireSidebar();
+  // restore target
+  const input = document.getElementById("active-target");
+  const stored = sessionStorage.getItem(STORAGE_TARGET) || "";
+  if (input) {
+    input.value = stored;
+    input.addEventListener("input", () => sessionStorage.setItem(STORAGE_TARGET, input.value.trim()));
+    input.addEventListener("change", () => sessionStorage.setItem(STORAGE_TARGET, input.value.trim()));
+    input.addEventListener("keydown", (e) => { if (e.key === "Enter") runScan(); });
+  }
+  // wipe old static rows from the activity log
+  const tbody = document.getElementById("activity-log");
+  if (tbody) tbody.innerHTML = "";
+  // bind run scan
+  const btn = document.getElementById("btn-run-scan");
+  if (btn) btn.addEventListener("click", runScan);
+  // initial health check
+  checkHealth();
+  setInterval(checkHealth, 30000);
+
+  // Watchlist alerts polling
+  loadWatchlistAlerts();
+  setInterval(loadWatchlistAlerts, 30000);
+});
+
+async function loadWatchlistAlerts() {
+  const badge = document.getElementById("watchlist-badge");
+  if (!badge) return;
+  try {
+    const since = new Date(Date.now() - 24 * 60 * 60 * 1000).toISOString();
+    const alerts = await api("GET", "/watchlist/alerts?since=" + encodeURIComponent(since));
+    if (alerts.enabled === false) return;
+    const unreadCount = alerts.filter(a => !a.is_read).length;
+    if (unreadCount > 0) {
+      badge.textContent = unreadCount;
+      badge.classList.remove("hidden");
+    } else {
+      badge.classList.add("hidden");
+    }
+  } catch (e) {
+    console.error("Failed to load watchlist alerts", e);
+  }
+}
+  function toggleSidebar() {
+    var s = document.getElementById('sidebar');
+    if (s) s.classList.toggle('sidebar-open');
+  }</script>
+</body></html>

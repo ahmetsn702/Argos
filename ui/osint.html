@@ -1,0 +1,614 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FOOTPRINT // BIO & OSINT</title>
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Courier New', monospace;
+            background: linear-gradient(135deg, #0a0a0a 0%, #001a00 100%);
+            color: #00ff00;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding: 20px;
+            border: 2px solid #00ff00;
+            background: rgba(0, 255, 0, 0.1);
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            color: #00ff00;
+            text-shadow: 0 0 10px #00ff00;
+            margin-bottom: 10px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            color: #00ff00;
+            opacity: 0.8;
+        }
+
+        .tabs {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-bottom: 30px;
+            border-bottom: 2px solid #00ff00;
+        }
+
+        .tab {
+            background: transparent;
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            padding: 15px 25px;
+            cursor: pointer;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            transition: all 0.3s;
+        }
+
+        .tab:hover {
+            background: rgba(0, 255, 0, 0.2);
+            box-shadow: 0 0 15px #00ff00;
+        }
+
+        .tab.active {
+            background: #00ff00;
+            color: #000;
+            box-shadow: 0 0 20px #00ff00;
+        }
+
+        .tab-content {
+            display: none;
+            padding: 30px;
+            border: 2px solid #00ff00;
+            background: rgba(0, 255, 0, 0.05);
+            margin-bottom: 20px;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        .tab-content h2 {
+            color: #00ff00;
+            margin-bottom: 20px;
+            font-size: 1.5rem;
+        }
+
+        .input-group {
+            margin-bottom: 20px;
+        }
+
+        .input-group label {
+            display: block;
+            color: #00ff00;
+            margin-bottom: 8px;
+            font-weight: bold;
+        }
+
+        .input-group input {
+            width: 100%;
+            padding: 12px;
+            background: rgba(0, 0, 0, 0.8);
+            border: 2px solid #00ff00;
+            color: #00ff00;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+        }
+
+        .input-group input:focus {
+            outline: none;
+            box-shadow: 0 0 15px #00ff00;
+        }
+
+        .input-group input::placeholder {
+            color: rgba(0, 255, 0, 0.5);
+        }
+
+        .btn {
+            background: #00ff00;
+            color: #000;
+            border: none;
+            padding: 15px 30px;
+            font-family: 'Courier New', monospace;
+            font-size: 1rem;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+
+        .btn:hover {
+            background: #00cc00;
+            box-shadow: 0 0 20px #00ff00;
+            transform: translateY(-2px);
+        }
+
+        .result-area {
+            margin-top: 30px;
+            padding: 20px;
+            border: 2px solid #00ff00;
+            background: rgba(0, 0, 0, 0.8);
+            min-height: 200px;
+            font-family: 'Courier New', monospace;
+            white-space: pre-wrap;
+            overflow-x: auto;
+        }
+
+        .loading {
+            color: #00ff00;
+            text-align: center;
+            padding: 20px;
+        }
+
+        .error {
+            color: #ff0000;
+            border-color: #ff0000;
+        }
+
+        .success {
+            color: #00ff00;
+            border-color: #00ff00;
+        }
+
+        .platform-checkbox {
+            display: inline-block;
+            margin: 10px 15px 10px 0;
+            color: #00ff00;
+        }
+
+        .platform-checkbox input {
+            margin-right: 8px;
+            accent-color: #00ff00;
+        }
+
+        @media (max-width: 768px) {
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                text-align: center;
+            }
+            
+            .header h1 {
+                font-size: 2rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>FOOTPRINT // BIO & OSINT</h1>
+            <p>Digital Intelligence Platform</p>
+        </div>
+
+        <div class="tabs">
+            <button class="tab active" onclick="switchTab('mosint')">📧 Mosint (E-posta)</button>
+            <button class="tab" onclick="switchTab('ig-bio')">📷 IG Bio</button>
+            <button class="tab" onclick="switchTab('ig-profile')">👤 IG Profile v2</button>
+            <button class="tab" onclick="switchTab('photos')">🖼️ Photos (IG/X/FB)</button>
+            <button class="tab" onclick="switchTab('compare')">🔄 Compare IG vs X</button>
+            <button class="tab" onclick="switchTab('hunt-x')">🔍 Hunt X by Name</button>
+            <button class="tab" onclick="switchTab('exif')">📸 EXIF</button>
+            <button class="tab" onclick="switchTab('unified')">⚡ Unified Analysis</button>
+            <button class="tab" onclick="switchTab('username-bios')">👥 Username_Bios</button>
+        </div>
+
+        <!-- Mosint Tab -->
+        <div id="mosint" class="tab-content active">
+            <h2>📧 Mosint - E-posta Analizi</h2>
+            <div class="input-group">
+                <label for="email">E-posta Adresi:</label>
+                <input type="email" id="email" placeholder="ornek@email.com">
+            </div>
+            <div class="input-group">
+                <label for="smtp">SMTP Kontrolü:</label>
+                <input type="number" id="smtp" placeholder="1" value="1">
+            </div>
+            <div class="input-group">
+                <label for="deep">Derin Analiz:</label>
+                <input type="number" id="deep" placeholder="1" value="1">
+            </div>
+            <button class="btn" onclick="runMosint()">🔍 Analiz Et</button>
+            <div id="mosint-result" class="result-area"></div>
+        </div>
+
+        <!-- IG Bio Tab -->
+        <div id="ig-bio" class="tab-content">
+            <h2>📷 Instagram Bio</h2>
+            <div class="input-group">
+                <label for="ig-username">Instagram Kullanıcı Adı:</label>
+                <input type="text" id="ig-username" placeholder="kullaniciadi">
+            </div>
+            <button class="btn" onclick="runIgBio()">🔍 Bio Getir</button>
+            <div id="ig-bio-result" class="result-area"></div>
+        </div>
+
+        <!-- IG Profile Tab -->
+        <div id="ig-profile" class="tab-content">
+            <h2>👤 Instagram Profile v2</h2>
+            <div class="input-group">
+                <label for="ig-profile-username">Instagram Kullanıcı Adı:</label>
+                <input type="text" id="ig-profile-username" placeholder="kullaniciadi">
+            </div>
+            <button class="btn" onclick="runIgProfile()">🔍 Profil Getir</button>
+            <div id="ig-profile-result" class="result-area"></div>
+        </div>
+
+        <!-- Photos Tab -->
+        <div id="photos" class="tab-content">
+            <h2>🖼️ Photos (IG/X/FB)</h2>
+            <div class="input-group">
+                <label for="photos-username">Kullanıcı Adı:</label>
+                <input type="text" id="photos-username" placeholder="kullaniciadi">
+            </div>
+            <div class="input-group">
+                <label for="photos-sources">Kaynaklar:</label>
+                <input type="text" id="photos-sources" placeholder="instagram,x,facebook" value="instagram,x,facebook">
+            </div>
+            <div class="input-group">
+                <label for="photos-limit">Limit:</label>
+                <input type="number" id="photos-limit" placeholder="10" value="10">
+            </div>
+            <button class="btn" onclick="runPhotos()">🔍 Fotoğrafları Getir</button>
+            <div id="photos-result" class="result-area"></div>
+        </div>
+
+        <!-- Compare Tab -->
+        <div id="compare" class="tab-content">
+            <h2>🔄 Compare IG vs X</h2>
+            <div class="input-group">
+                <label for="compare-username">Kullanıcı Adı:</label>
+                <input type="text" id="compare-username" placeholder="kullaniciadi">
+            </div>
+            <button class="btn" onclick="runCompare()">🔍 Karşılaştır</button>
+            <div id="compare-result" class="result-area"></div>
+        </div>
+
+        <!-- Hunt X Tab -->
+        <div id="hunt-x" class="tab-content">
+            <h2>🔍 Hunt X by Name</h2>
+            <div class="input-group">
+                <label for="hunt-name">Tam İsim:</label>
+                <input type="text" id="hunt-name" placeholder="Ad Soyad">
+            </div>
+            <div class="input-group">
+                <label for="hunt-keywords">Anahtar Kelimeler (virgülle ayırın):</label>
+                <input type="text" id="hunt-keywords" placeholder="developer,london">
+            </div>
+            <div class="input-group">
+                <label for="hunt-limit">Limit:</label>
+                <input type="number" id="hunt-limit" placeholder="10" value="10">
+            </div>
+            <button class="btn" onclick="runHuntX()">🔍 Ara</button>
+            <div id="hunt-x-result" class="result-area"></div>
+        </div>
+
+        <!-- EXIF Tab -->
+        <div id="exif" class="tab-content">
+            <h2>📸 EXIF Analizi</h2>
+            <div class="input-group">
+                <label for="exif-file">Dosya Seç:</label>
+                <input type="file" id="exif-file" accept="image/*">
+            </div>
+            <button class="btn" onclick="runExif()">🔍 EXIF Analiz Et</button>
+            <div id="exif-result" class="result-area"></div>
+        </div>
+
+        <!-- Unified Analysis Tab -->
+        <div id="unified" class="tab-content">
+            <h2>⚡ Unified Analysis</h2>
+            <div class="input-group">
+                <label for="unified-name">İsim:</label>
+                <input type="text" id="unified-name" placeholder="Ad Soyad">
+            </div>
+            <div class="input-group">
+                <label for="unified-site">Site (opsiyonel):</label>
+                <input type="text" id="unified-site" placeholder="instagram">
+            </div>
+            <div class="input-group">
+                <label for="unified-file">Dosya (opsiyonel):</label>
+                <input type="file" id="unified-file" accept="image/*">
+            </div>
+            <button class="btn" onclick="runUnified()">🔍 Birleşik Analiz</button>
+            <div id="unified-result" class="result-area"></div>
+        </div>
+
+        <!-- Username Bios Tab -->
+        <div id="username-bios" class="tab-content">
+            <h2>👥 Username Bios</h2>
+            <div class="input-group">
+                <label for="bios-username">Kullanıcı Adı:</label>
+                <input type="text" id="bios-username" placeholder="kullaniciadi">
+            </div>
+            <div class="input-group">
+                <label>Platformlar:</label>
+                <div>
+                    <label class="platform-checkbox"><input type="checkbox" id="bio-instagram" checked> Instagram</label>
+                    <label class="platform-checkbox"><input type="checkbox" id="bio-github" checked> GitHub</label>
+                    <label class="platform-checkbox"><input type="checkbox" id="bio-x" checked> X/Twitter</label>
+                    <label class="platform-checkbox"><input type="checkbox" id="bio-reddit" checked> Reddit</label>
+                    <label class="platform-checkbox"><input type="checkbox" id="bio-youtube" checked> YouTube</label>
+                </div>
+            </div>
+            <button class="btn" onclick="runUsernameBios()">🔍 Bio'ları Getir</button>
+            <div id="username-bios-result" class="result-area"></div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = window.location.origin;
+
+        function switchTab(tabName) {
+            // Hide all tab contents
+            document.querySelectorAll('.tab-content').forEach(content => {
+                content.classList.remove('active');
+            });
+            
+            // Remove active class from all tabs
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab content
+            document.getElementById(tabName).classList.add('active');
+            
+            // Add active class to clicked tab
+            event.target.classList.add('active');
+        }
+
+        function showLoading(elementId) {
+            document.getElementById(elementId).innerHTML = '<div class="loading">🔄 Yükleniyor...</div>';
+        }
+
+        function showResult(elementId, data, isError = false) {
+            const resultDiv = document.getElementById(elementId);
+            resultDiv.className = `result-area ${isError ? 'error' : 'success'}`;
+            resultDiv.textContent = JSON.stringify(data, null, 2);
+        }
+
+        async function runMosint() {
+            const email = document.getElementById('email').value;
+            const smtp = document.getElementById('smtp').value;
+            const deep = document.getElementById('deep').value;
+            
+            if (!email) {
+                alert('Lütfen e-posta adresi girin!');
+                return;
+            }
+            
+            showLoading('mosint-result');
+            
+            try {
+                const response = await fetch(`${API_BASE}/mosint/full?email=${encodeURIComponent(email)}&smtp=${smtp}&deep=${deep}`);
+                const data = await response.json();
+                showResult('mosint-result', data);
+            } catch (error) {
+                showResult('mosint-result', { error: error.message }, true);
+            }
+        }
+
+        async function runIgBio() {
+            const username = document.getElementById('ig-username').value;
+            
+            if (!username) {
+                alert('Lütfen Instagram kullanıcı adı girin!');
+                return;
+            }
+            
+            showLoading('ig-bio-result');
+            
+            try {
+                const response = await fetch(`${API_BASE}/ig/bio?username=${encodeURIComponent(username)}`);
+                const data = await response.json();
+                showResult('ig-bio-result', data);
+            } catch (error) {
+                showResult('ig-bio-result', { error: error.message }, true);
+            }
+        }
+
+        async function runIgProfile() {
+            const username = document.getElementById('ig-profile-username').value;
+            
+            if (!username) {
+                alert('Lütfen Instagram kullanıcı adı girin!');
+                return;
+            }
+            
+            showLoading('ig-profile-result');
+            
+            try {
+                const response = await fetch(`${API_BASE}/ig/profile?username=${encodeURIComponent(username)}`);
+                const data = await response.json();
+                showResult('ig-profile-result', data);
+            } catch (error) {
+                showResult('ig-profile-result', { error: error.message }, true);
+            }
+        }
+
+        async function runPhotos() {
+            const username = document.getElementById('photos-username').value;
+            const sources = document.getElementById('photos-sources').value;
+            const limit = document.getElementById('photos-limit').value;
+            
+            if (!username) {
+                alert('Lütfen kullanıcı adı girin!');
+                return;
+            }
+            
+            showLoading('photos-result');
+            
+            try {
+                const response = await fetch(`${API_BASE}/photos?username=${encodeURIComponent(username)}&sources=${encodeURIComponent(sources)}&limit=${limit}`);
+                const data = await response.json();
+                showResult('photos-result', data);
+            } catch (error) {
+                showResult('photos-result', { error: error.message }, true);
+            }
+        }
+
+        async function runCompare() {
+            const username = document.getElementById('compare-username').value;
+            
+            if (!username) {
+                alert('Lütfen kullanıcı adı girin!');
+                return;
+            }
+            
+            showLoading('compare-result');
+            
+            try {
+                const response = await fetch(`${API_BASE}/compare-ig-x2?username=${encodeURIComponent(username)}`);
+                const data = await response.json();
+                showResult('compare-result', data);
+            } catch (error) {
+                showResult('compare-result', { error: error.message }, true);
+            }
+        }
+
+        async function runHuntX() {
+            const name = document.getElementById('hunt-name').value;
+            const keywords = document.getElementById('hunt-keywords').value;
+            const limit = document.getElementById('hunt-limit').value;
+            
+            if (!name) {
+                alert('Lütfen tam isim girin!');
+                return;
+            }
+            
+            showLoading('hunt-x-result');
+            
+            try {
+                let url = `${API_BASE}/hunt-x-by-name?full_name=${encodeURIComponent(name)}&limit=${limit}`;
+                if (keywords) {
+                    const kwArray = keywords.split(',').map(k => k.trim()).filter(k => k);
+                    kwArray.forEach(kw => {
+                        url += `&kw=${encodeURIComponent(kw)}`;
+                    });
+                }
+                
+                const response = await fetch(url);
+                const data = await response.json();
+                showResult('hunt-x-result', data);
+            } catch (error) {
+                showResult('hunt-x-result', { error: error.message }, true);
+            }
+        }
+
+        async function runExif() {
+            const fileInput = document.getElementById('exif-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Lütfen bir dosya seçin!');
+                return;
+            }
+            
+            showLoading('exif-result');
+            
+            try {
+                const formData = new FormData();
+                formData.append('file', file);
+                
+                const response = await fetch(`${API_BASE}/analyze-image`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                showResult('exif-result', data);
+            } catch (error) {
+                showResult('exif-result', { error: error.message }, true);
+            }
+        }
+
+        async function runUnified() {
+            const name = document.getElementById('unified-name').value;
+            const site = document.getElementById('unified-site').value;
+            const fileInput = document.getElementById('unified-file');
+            const file = fileInput.files[0];
+            
+            if (!name) {
+                alert('Lütfen isim girin!');
+                return;
+            }
+            
+            showLoading('unified-result');
+            
+            try {
+                const formData = new FormData();
+                formData.append('name', name);
+                if (site) formData.append('site', site);
+                if (file) formData.append('file', file);
+                
+                const response = await fetch(`${API_BASE}/combined-search`, {
+                    method: 'POST',
+                    body: formData
+                });
+                const data = await response.json();
+                showResult('unified-result', data);
+            } catch (error) {
+                showResult('unified-result', { error: error.message }, true);
+            }
+        }
+
+        async function runUsernameBios() {
+            const username = document.getElementById('bios-username').value;
+            
+            if (!username) {
+                alert('Lütfen kullanıcı adı girin!');
+                return;
+            }
+            
+            const platforms = [];
+            if (document.getElementById('bio-instagram').checked) platforms.push('instagram');
+            if (document.getElementById('bio-github').checked) platforms.push('github');
+            if (document.getElementById('bio-x').checked) platforms.push('x');
+            if (document.getElementById('bio-reddit').checked) platforms.push('reddit');
+            if (document.getElementById('bio-youtube').checked) platforms.push('youtube');
+            
+            if (platforms.length === 0) {
+                alert('Lütfen en az bir platform seçin!');
+                return;
+            }
+            
+            showLoading('username-bios-result');
+            
+            try {
+                const response = await fetch(`${API_BASE}/username-bios?username=${encodeURIComponent(username)}&only=${platforms.join(',')}`);
+                const data = await response.json();
+                showResult('username-bios-result', data);
+            } catch (error) {
+                showResult('username-bios-result', { error: error.message }, true);
+            }
+        }
+
+        // Console message
+        console.log('%c FOOTPRINT OSINT ', 'background: #0a0a0a; color: #00ff00; font-size: 20px; padding: 10px; border: 2px solid #00ff00;');
+        console.log('%c Digital Intelligence Platform ', 'background: #001a00; color: #00ff00; font-size: 14px; padding: 5px;');
+    </script>
+</body>
+</html>

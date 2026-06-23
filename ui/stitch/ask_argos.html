@@ -1,0 +1,377 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+    <meta charset="utf-8"/>
+    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+    <title>ARGOS — Ask Agent Intelligence</title>
+    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@300;400;500;700;800&amp;display=swap" rel="stylesheet"/>
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+    <script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "bg": "#0a0e0b",
+                        "surface": "#0f1712",
+                        "surface-2": "#0a130f",
+                        "accent": "#2ecc71",
+                        "accent-bright": "#00f08a",
+                        "text-primary": "#e9fff6",
+                        "text-secondary": "#7ddfb2",
+                        "danger": "#ff4444",
+                        "warning": "#ffaa00",
+                        "border": "#1b2a20",
+                    },
+                    borderRadius: {
+                        "DEFAULT": "4px",
+                        "lg": "4px",
+                        "xl": "8px",
+                        "full": "9999px"
+                    },
+                    fontFamily: {
+                        "headline": ["JetBrains Mono", "monospace"],
+                        "display": ["JetBrains Mono", "monospace"],
+                        "body": ["JetBrains Mono", "monospace"],
+                        "label": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+    </script>
+    <style>
+        body {
+            background-color: #0a0e0b;
+            font-family: 'JetBrains Mono', monospace;
+            color: #e9fff6;
+            margin: 0;
+            overflow: hidden;
+        }
+
+        .scanline {
+            width: 100%;
+            height: 100px;
+            z-index: 99;
+            background: linear-gradient(0deg, rgba(0, 0, 0, 0) 0%, rgba(46, 204, 113, 0.02) 50%, rgba(0, 0, 0, 0) 100%);
+            opacity: 0.1;
+            position: absolute;
+            bottom: 100%;
+            animation: scanline 10s linear infinite;
+        }
+
+        @keyframes scanline {
+            0% { bottom: 100%; }
+            100% { bottom: -100px; }
+        }
+
+        .glow-green {
+            box-shadow: 0 0 12px rgba(46, 204, 113, 0.25);
+        }
+        .glow-danger {
+            box-shadow: 0 0 12px rgba(255, 68, 68, 0.25);
+        }
+
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+            height: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0a0e0b;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1b2a20;
+            border-radius: 2px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #2ecc71;
+        }
+    </style>
+</head>
+<body class="flex h-screen overflow-hidden bg-bg text-text-primary selection:bg-accent selection:text-bg">
+    <div class="scanline pointer-events-none"></div>
+
+    <!-- Disabled Banner / Overlay -->
+    <div id="disabled-banner" class="hidden absolute inset-0 z-[100] flex flex-col items-center justify-center bg-bg/90 backdrop-blur-md">
+        <div class="border border-danger p-8 max-w-lg text-center bg-[#1a0c0c] glow-danger rounded-xl">
+            <span class="material-symbols-outlined text-danger text-6xl mb-4 animate-pulse">warning</span>
+            <h2 class="text-2xl font-black text-danger tracking-wider uppercase mb-2">Agent Ask Deactivated</h2>
+            <p class="text-text-secondary text-sm mb-6 font-semibold">
+                The AI Agent Ask endpoint is offline because <code class="bg-[#2a0e0e] px-2 py-1 rounded text-danger">AGENT_ENABLED=false</code> is set in the system configuration.
+            </p>
+            <div class="text-[10px] text-danger/60 tracking-widest font-bold uppercase">
+                SYSTEM DEACTIVATED // ADMIN INTERVENTION REQUIRED
+            </div>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <aside class="fixed left-0 top-0 h-full flex flex-col w-[240px] border-r border-[#1b2a20] bg-[#0a0e0b] z-50" id="sidebar">
+        <!-- Logo Section -->
+        <div class="p-6 flex flex-col gap-1">
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-[#2ecc71] animate-pulse shadow-[0_0_8px_#2ecc71]"></div>
+                <h1 class="text-xl font-bold text-[#2ecc71] tracking-[0.2em] font-['JetBrains_Mono'] uppercase">ARGOS</h1>
+            </div>
+            <div class="text-[10px] tracking-[0.4em] text-[#7ddfb2] opacity-60 ml-5">OSINT // SYSTEM ACTIVE</div>
+        </div>
+        <!-- Modules Section -->
+        <div class="px-6 py-2">
+            <span class="text-[10px] text-[#7ddfb2] opacity-40 font-bold tracking-[0.2em]">MODULES</span>
+        </div>
+        <!-- Navigation -->
+        <nav class="flex-1 overflow-y-auto custom-scrollbar px-2 py-2">
+            <div class="space-y-1">
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/dashboard.html">
+                    <span class="material-symbols-outlined text-[18px]">dashboard</span>
+                    Overview
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/profile.html#phone">
+                    <span class="material-symbols-outlined text-[18px]">phone_iphone</span>
+                    Phone Lookup
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/profile.html#darkweb">
+                    <span class="material-symbols-outlined text-[18px]">security</span>
+                    Dark Web
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/profile.html#domain">
+                    <span class="material-symbols-outlined text-[18px]">language</span>
+                    Domain Search
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/profile.html#email">
+                    <span class="material-symbols-outlined text-[18px]">alternate_email</span>
+                    Email OSINT
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/profile.html#geo">
+                    <span class="material-symbols-outlined text-[18px]">location_on</span>
+                    Geo Photo
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/profile.html#face">
+                    <span class="material-symbols-outlined text-[18px]">face</span>
+                    Face Search
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/correlation.html">
+                    <span class="material-symbols-outlined text-[18px]">link</span>
+                    Correlation
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/llm_analysis.html">
+                    <span class="material-symbols-outlined text-[18px]">psychology</span>
+                    LLM Analysis
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/watchlist.html">
+                    <span class="material-symbols-outlined text-[18px]">visibility</span>
+                    Watchlist
+                </a>
+                <a class="text-[#00f08a] bg-[#0f1712] border-l-2 border-[#2ecc71] font-bold p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px]" href="/stitch/ask_argos.html">
+                    <span class="material-symbols-outlined text-[18px]">chat</span>
+                    Ask Agent
+                </a>
+                <a class="text-[#7ddfb2] hover:text-[#2ecc71] p-4 flex items-center gap-3 transition-colors font-['JetBrains_Mono'] uppercase tracking-widest text-[11px] hover:bg-[#0f1712]" href="/stitch/report.html">
+                    <span class="material-symbols-outlined text-[18px]">description</span>
+                    Report
+                </a>
+            </div>
+        </nav>
+        <!-- Footer -->
+        <div class="p-4 border-t border-[#1b2a20] space-y-4">
+            <div class="flex justify-between items-center text-[9px] text-[#7ddfb2] opacity-50 uppercase tracking-widest">
+                <span>V4.0 STABLE</span>
+                <span>ENC: AES-256</span>
+            </div>
+        </div>
+    </aside>
+
+    <!-- Main Content Area -->
+    <main id="main-content" class="ml-[240px] flex-1 flex flex-col h-screen overflow-hidden bg-bg">
+        <!-- Top Nav Bar -->
+        <header class="h-16 border-b border-border flex justify-between items-center px-8 bg-surface/50 backdrop-blur-sm shrink-0">
+            <div class="flex items-center gap-4">
+                <span class="text-xs text-[#2ecc71] tracking-[0.3em] uppercase">SYSTEM // ASK AGENT</span>
+            </div>
+            <div class="flex items-center gap-3">
+                <div class="w-2 h-2 rounded-full bg-[#2ecc71] animate-ping"></div>
+                <span class="text-[11px] text-[#7ddfb2] font-semibold tracking-wider">SECURE CONTEXT</span>
+            </div>
+        </header>
+
+        <!-- Dynamic Content Grid -->
+        <div class="flex-1 overflow-y-auto custom-scrollbar p-8 space-y-8">
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+                <!-- Ask Agent Form (Left/Center) -->
+                <div class="lg:col-span-2 space-y-6">
+                    <div class="bg-surface border border-border rounded p-6 glow-green">
+                        <div class="flex items-center gap-2 border-b border-border pb-3 mb-6">
+                            <span class="material-symbols-outlined text-[#2ecc71]">terminal</span>
+                            <h2 class="text-sm font-bold text-[#2ecc71] uppercase tracking-wider">Agent Query Input</h2>
+                        </div>
+                        
+                        <form id="ask-form" class="space-y-4">
+                            <div>
+                                <label for="query-input" class="block text-xs uppercase tracking-widest text-[#7ddfb2] mb-2 font-bold">Query</label>
+                                <textarea id="query-input" rows="4" required placeholder="What was found about the target during the investigation?" class="w-full bg-bg border border-border rounded p-3 text-text-primary focus:border-[#2ecc71] focus:ring-0 text-sm font-mono"></textarea>
+                            </div>
+
+                            <div>
+                                <label for="session-id-input" class="block text-xs uppercase tracking-widest text-[#7ddfb2] mb-2 font-bold">Session ID (Optional)</label>
+                                <input type="text" id="session-id-input" placeholder="Leave blank to start a new session context" class="w-full bg-bg border border-border rounded p-3 text-text-primary focus:border-[#2ecc71] focus:ring-0 text-sm font-mono" />
+                            </div>
+
+                            <button type="submit" id="submit-btn" class="w-full py-3 bg-[#0f1712] border border-[#2ecc71] text-[#2ecc71] hover:bg-[#2ecc71] hover:text-bg font-bold tracking-widest uppercase transition-all duration-150 flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined">send</span>
+                                Execute Query
+                            </button>
+                        </form>
+                    </div>
+
+                    <!-- Results / Output -->
+                    <div id="results-container" class="hidden bg-surface border border-border rounded p-6">
+                        <div class="flex items-center justify-between border-b border-border pb-3 mb-6">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-[#2ecc71]">chat_bubble</span>
+                                <h2 class="text-sm font-bold text-[#2ecc71] uppercase tracking-wider">Agent Response</h2>
+                            </div>
+                            <div class="text-[10px] text-[#7ddfb2]/60 font-mono" id="current-session-label"></div>
+                        </div>
+
+                        <!-- Main Answer box -->
+                        <div class="bg-bg border border-border rounded p-4 mb-6 font-mono text-sm leading-relaxed whitespace-pre-wrap text-[#00f08a]" id="response-answer">
+                        </div>
+
+                        <!-- Source List -->
+                        <div>
+                            <h3 class="text-xs uppercase tracking-widest text-[#7ddfb2] mb-3 font-bold">Retrieval Sources</h3>
+                            <div class="space-y-3" id="response-sources">
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Info Side panel -->
+                <div class="space-y-6">
+                    <div class="bg-surface border border-border rounded p-6">
+                        <div class="flex items-center gap-2 border-b border-border pb-3 mb-4">
+                            <span class="material-symbols-outlined text-warning">info</span>
+                            <h2 class="text-sm font-bold text-warning uppercase tracking-wider font-mono">Module Info</h2>
+                        </div>
+                        <p class="text-xs text-text-secondary leading-relaxed mb-4">
+                            Ask Agent queries the persistent ChromaDB collection associated with the provided Session ID. 
+                            It retrieves the closest semantic findings and attempts to construct a contextual synthesis using local/remote LLM analysis.
+                        </p>
+                        <div class="border border-border p-3 bg-bg rounded font-mono text-[10px] text-text-secondary space-y-2">
+                            <div>ENDPOINT: <span class="text-[#2ecc71]">POST /agent/ask</span></div>
+                            <div>VECTOR STORE: <span class="text-[#2ecc71]">CHROMA</span></div>
+                            <div>ISOLATION: <span class="text-[#2ecc71]">SESSION-BASED</span></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <script>
+        // Check if agent is enabled on load
+        async function checkStatus() {
+            try {
+                const response = await fetch('/agent/budget/status');
+                const data = await response.json();
+                if (data.enabled === false) {
+                    document.getElementById('disabled-banner').classList.remove('hidden');
+                }
+            } catch (e) {
+                console.error("Failed to check agent status:", e);
+            }
+        }
+
+        document.getElementById('ask-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const queryInput = document.getElementById('query-input');
+            const sessionIdInput = document.getElementById('session-id-input');
+            const submitBtn = document.getElementById('submit-btn');
+            const resultsContainer = document.getElementById('results-container');
+            const responseAnswer = document.getElementById('response-answer');
+            const responseSources = document.getElementById('response-sources');
+            const currentSessionLabel = document.getElementById('current-session-label');
+
+            const query = queryInput.value.trim();
+            const session_id = sessionIdInput.value.trim() || null;
+
+            if (!query) return;
+
+            // Loading state
+            submitBtn.disabled = true;
+            submitBtn.innerHTML = `<span class="animate-spin material-symbols-outlined">sync</span> Querying Agent...`;
+            resultsContainer.classList.add('hidden');
+
+            try {
+                const response = await fetch('/agent/ask', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ query, session_id })
+                });
+                
+                const data = await response.json();
+                
+                if (data.enabled === false) {
+                    document.getElementById('disabled-banner').classList.remove('hidden');
+                    return;
+                }
+
+                // Show results
+                resultsContainer.classList.remove('hidden');
+                responseAnswer.textContent = data.answer;
+                currentSessionLabel.textContent = `SESSION: ${data.session_id}`;
+                
+                // Update session id input if it was empty so they can continue the session
+                if (!sessionIdInput.value.trim()) {
+                    sessionIdInput.value = data.session_id;
+                }
+
+                // Render sources
+                responseSources.innerHTML = '';
+                if (!data.sources || data.sources.length === 0) {
+                    responseSources.innerHTML = `
+                        <div class="text-xs text-warning border border-warning/30 bg-warning/10 p-4 rounded italic font-mono flex flex-col gap-2">
+                            <div class="flex items-center gap-2 font-bold uppercase tracking-wider">
+                                <span class="material-symbols-outlined text-sm">warning</span>
+                                No Session Findings
+                            </div>
+                            <div>No findings available for this session. ChromaStore is currently empty. Run an investigation first to populate findings.</div>
+                        </div>
+                    `;
+                } else {
+                    data.sources.forEach(src => {
+                        const distVal = src.distance !== undefined ? src.distance.toFixed(4) : 'N/A';
+                        const metaStr = JSON.stringify(src.metadata || {});
+                        
+                        const srcEl = document.createElement('div');
+                        srcEl.className = 'border border-border p-3 bg-bg rounded space-y-2';
+                        srcEl.innerHTML = `
+                            <div class="text-xs text-text-primary leading-relaxed">${escapeHtml(src.text)}</div>
+                            <div class="flex justify-between items-center text-[10px] text-[#7ddfb2]/60 font-mono">
+                                <span>DISTANCE: ${distVal}</span>
+                                <span class="max-w-[70%] truncate" title='${escapeHtml(metaStr)}'>META: ${escapeHtml(metaStr)}</span>
+                            </div>
+                        `;
+                        responseSources.appendChild(srcEl);
+                    });
+                }
+            } catch (err) {
+                console.error("Ask query failed:", err);
+                resultsContainer.classList.remove('hidden');
+                responseAnswer.innerHTML = `<span class="text-danger">QUERY ERROR: ${escapeHtml(err.message)}</span>`;
+                responseSources.innerHTML = '';
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.innerHTML = `<span class="material-symbols-outlined">send</span> Execute Query`;
+            }
+        });
+
+        function escapeHtml(str) {
+            if (!str) return '';
+            return str.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;").replace(/'/g, "&#039;");
+        }
+
+        checkStatus();
+    </script>
+</body>
+</html>

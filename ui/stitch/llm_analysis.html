@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ARGOS OSINT — LLM ANALYSIS</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries">  function toggleSidebar() {
+    var s = document.getElementById('sidebar');
+    if (s) s.classList.toggle('sidebar-open');
+  }</script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<style>
+        :root {
+            --bg: #0a0e0b;
+            --surface: #0f1712;
+            --surface-2: #0a130f;
+            --accent: #2ecc71;
+            --accent-bright: #00f08a;
+            --text-primary: #e9fff6;
+            --text-secondary: #7ddfb2;
+            --danger: #ff4444;
+            --warning: #ffaa00;
+            --border: #1b2a20;
+        }
+        body {
+            background-color: var(--bg);
+            color: var(--text-primary);
+            font-family: 'JetBrains_Mono', monospace;
+            margin: 0;
+            overflow-x: hidden;
+        }
+        .font-jetbrains { font-family: 'JetBrains Mono', monospace; }
+        .scanline-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+        @keyframes blink { 0%, 100% { opacity: 1; } 50% { opacity: 0; } }
+        .caret-blink { animation: blink 1s step-end infinite; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: var(--bg); }
+        ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+        ::-webkit-scrollbar-thumb:hover { background: var(--accent); }
+      @media (max-width: 768px) {
+    #sidebar { transform: translateX(-100%); transition: transform 0.2s ease; position: fixed; z-index: 50; }
+    #sidebar.sidebar-open { transform: translateX(0); }
+    #main-content { margin-left: 0 !important; }
+    #hamburger { display: flex; }
+  }
+  @media (min-width: 769px) { #hamburger { display: none; } }</style>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+                primary: '#2ecc71',
+                accent: '#00f08a',
+                surface: '#0f1712',
+                'surface-2': '#0a130f',
+                border: '#1b2a20'
+            },
+            borderRadius: {
+                "DEFAULT": "0.125rem",
+                "lg": "0.25rem",
+                "xl": "0.5rem",
+                "full": "0.75rem"
+            },
+            fontFamily: {
+                "headline": ["JetBrains Mono"],
+                "display": ["JetBrains Mono"],
+                "body": ["JetBrains Mono"],
+                "label": ["JetBrains Mono"]
+            }
+          },
+        },
+      }
+      function toggleSidebar() {
+    var s = document.getElementById('sidebar');
+    if (s) s.classList.toggle('sidebar-open');
+  }</script>
+</head>
+<body class="bg-[#0a0e0b] font-jetbrains text-[#e9fff6]">
+<button id="hamburger" onclick="toggleSidebar()" style="display:none" class="fixed top-3 left-3 z-[60] text-[#2ecc71] font-mono text-xl bg-[#0a0e0b] border border-[#1b2a20] px-2 py-1 leading-none hover:bg-[#1b2a20] transition-colors">&#9776;</button>
+<!-- Sidebar Navigation -->
+<aside class="fixed left-0 top-0 h-full w-[240px] flex flex-col z-50 py-4 bg-[#0f1712] border-r border-[#1b2a20]" id="sidebar">
+<div class="px-6 mb-8 text-xl font-bold text-[#2ecc71] tracking-tighter">ARGOS OSINT</div>
+<div class="px-6 mb-6 flex items-center gap-3">
+<div class="w-10 h-10 bg-[#1b2a20] flex items-center justify-center rounded">
+<span class="material-symbols-outlined text-[#2ecc71]">account_circle</span>
+</div>
+<div>
+<div class="text-[11px] font-bold text-[#2ecc71]">OPERATOR_01</div>
+<div class="text-[9px] text-[#7ddfb2]">LEVEL_4_ACCESS</div>
+</div>
+</div>
+<nav class="flex-1 space-y-1 overflow-y-auto">
+<a class="flex items-center gap-3 text-[#7ddfb2] px-4 py-3 hover:bg-[#0a130f] hover:text-[#2ecc71] transition-all duration-150 text-[13px] uppercase tracking-wider" href="#">
+<span class="material-symbols-outlined scale-75">dashboard</span> Overview
+            </a>
+<a class="flex items-center gap-3 text-[#7ddfb2] px-4 py-3 hover:bg-[#0a130f] hover:text-[#2ecc71] transition-all duration-150 text-[13px] uppercase tracking-wider" href="#">
+<span class="material-symbols-outlined scale-75">phone_iphone</span> Phone Lookup
+            </a>
+<a class="flex items-center gap-3 text-[#7ddfb2] px-4 py-3 hover:bg-[#0a130f] hover:text-[#2ecc71] transition-all duration-150 text-[13px] uppercase tracking-wider" href="#">
+<span class="material-symbols-outlined scale-75">security</span> Dark Web
+            </a>
+<a class="flex items-center gap-3 text-[#7ddfb2] px-4 py-3 hover:bg-[#0a130f] hover:text-[#2ecc71] transition-all duration-150 text-[13px] uppercase tracking-wider" href="#">
+<span class="material-symbols-outlined scale-75">language</span> Domain Search
+            </a>
+<a class="flex items-center gap-3 text-[#7ddfb2] px-4 py-3 hover:bg-[#0a130f] hover:text-[#2ecc71] transition-all duration-150 text-[13px] uppercase tracking-wider" href="#">
+<span class="material-symbols-outlined scale-75">alternate_email</span> Email OSINT
+            </a>
+<a class="flex items-center gap-3 text-[#7ddfb2] px-4 py-3 hover:bg-[#0a130f] hover:text-[#2ecc71] transition-all duration-150 text-[13px] uppercase tracking-wider" href="#">
+<span class="material-symbols-outlined scale-75">location_on</span> Geo Photo
+            </a>
+<a class="flex items-center gap-3 text-[#7ddfb2] px-4 py-3 hover:bg-[#0a130f] hover:text-[#2ecc71] transition-all duration-150 text-[13px] uppercase tracking-wider" href="#">
+<span class="material-symbols-outlined scale-75">face</span> Face Search
+            </a>
+<a class="flex items-center gap-3 text-[#7ddfb2] px-4 py-3 hover:bg-[#0a130f] hover:text-[#2ecc71] transition-all duration-150 text-[13px] uppercase tracking-wider" href="#">
+<span class="material-symbols-outlined scale-75">hub</span> Correlation
+            </a>
+<a class="flex items-center gap-3 bg-[#1b2a20] text-[#00f08a] border-l-2 border-[#2ecc71] font-bold px-4 py-3 text-[13px] uppercase tracking-wider" href="#">
+<span class="material-symbols-outlined scale-75" style="font-variation-settings: 'FILL' 1;">psychology</span> LLM Analysis
+            </a>
+<a class="flex items-center gap-3 text-[#7ddfb2] px-4 py-3 hover:bg-[#0a130f] hover:text-[#2ecc71] transition-all duration-150 text-[13px] uppercase tracking-wider" href="#">
+<span class="material-symbols-outlined scale-75">description</span> Report
+            </a>
+</nav>
+<div class="mt-4 px-4 py-4 space-y-2 border-t border-[#1b2a20]">
+<a class="flex items-center gap-3 text-[#7ddfb2] text-[11px] uppercase tracking-widest hover:text-[#2ecc71]" href="#">
+<span class="material-symbols-outlined text-sm">menu_book</span> Docs
+            </a>
+<a class="flex items-center gap-3 text-[#7ddfb2] text-[11px] uppercase tracking-widest hover:text-[#2ecc71]" href="#">
+<span class="material-symbols-outlined text-sm">help_outline</span> Help
+            </a>
+</div>
+</aside>
+<!-- Top App Bar -->
+<header class="fixed top-0 right-0 left-[240px] h-14 z-40 flex items-center justify-between px-6 bg-[#0a0e0b] border-b border-[#1b2a20] shadow-[0_0_12px_rgba(46,204,113,0.1)]">
+<div class="flex items-center gap-4">
+<div class="text-[11px] font-['JetBrains_Mono'] uppercase tracking-[0.2em] text-[#7ddfb2]">
+<span class="opacity-50">ANALYSIS / </span>OSINT
+            </div>
+<div class="flex items-center gap-3 ml-4">
+<div class="flex items-center gap-1.5 px-2 py-0.5 border border-[#1b2a20] rounded bg-[#0a130f]">
+<div class="w-1.5 h-1.5 rounded-full bg-[#2ecc71]"></div>
+<span class="text-[9px] uppercase tracking-widest text-[#7ddfb2]">API:OK</span>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-0.5 border border-[#1b2a20] rounded bg-[#0a130f]">
+<div class="w-1.5 h-1.5 rounded-full bg-[#2ecc71]"></div>
+<span class="text-[9px] uppercase tracking-widest text-[#7ddfb2]">REDIS:OK</span>
+</div>
+<div class="flex items-center gap-1.5 px-2 py-0.5 border border-[#1b2a20] rounded bg-[#0a130f]">
+<div class="w-1.5 h-1.5 rounded-full bg-[#2ecc71]"></div>
+<span class="text-[9px] uppercase tracking-widest text-[#7ddfb2]">GEMINI:UP</span>
+</div>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-4 text-[#7ddfb2]">
+<span class="material-symbols-outlined cursor-pointer hover:text-[#00f08a] transition-colors">notifications</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-[#00f08a] transition-colors">settings</span>
+<span class="material-symbols-outlined cursor-pointer hover:text-[#00f08a] transition-colors">terminal</span>
+</div>
+<img alt="User Avatar" class="w-8 h-8 rounded border border-[#2ecc71]" data-alt="A macro close-up of a high-resolution circuit board with glowing green light paths and microchips. The aesthetic is industrial and futuristic, captured with shallow depth of field. Soft neon green accents reflect off metallic surfaces against a deep black background, creating a high-tech terminal vibe." src="https://lh3.googleusercontent.com/aida-public/AB6AXuB0T8G0R80r0hKcpoDmt8jiDTLKQmdg4GosUTqPeFejcLak_EtRnUzeeKhOVt7uPkf0aXv7Tlx59IhKiJAFrrq9Phan_f1rKY1uLOXE-zfVvTVUYzfkD_FmFLOSonLvKJyo_9DJynJMcs4QE0Ce-A4eiaCAISY8AVBuZfRwhrBoepePVMuzcadf-jfzZKVapVlnil5FDRogMPV1wigiWbZUUMv8RFYNTPq8S83nrTeSGfe5v-NOQHz1vM4Wt-X33m5GOQ_NcGUAjjbk"/>
+</div>
+</header>
+<!-- Main Content Area -->
+<main id="main-content" class="ml-[240px] pt-14 pb-12 p-6 min-h-screen">
+<!-- Section A: INPUT -->
+<section class="mb-6">
+<div class="bg-[#0f1712] border border-[#1b2a20] rounded-lg overflow-hidden">
+<div class="p-4 border-b border-[#1b2a20] flex items-center justify-between">
+<div class="flex items-center gap-4">
+<h2 class="text-sm font-bold uppercase tracking-widest text-[#2ecc71] border-b-2 border-[#2ecc71] pb-1">INPUT /analysis/osint</h2>
+<span class="text-[10px] bg-[#1b2a20] text-[#7ddfb2] px-2 py-1 rounded border border-[#2ecc71]/20">model: gemini-3.5-flash</span>
+</div>
+<div class="text-[11px] text-[#7ddfb2] opacity-60">SYSTEM_TIME: 14:42:08</div>
+</div>
+<div class="p-4 flex flex-col gap-4">
+<div class="flex items-center gap-3 text-[11px]">
+<span class="text-[#7ddfb2] font-bold">DATA SOURCE:</span>
+<div class="flex gap-2">
+<button class="px-3 py-1 bg-[#2ecc71] text-[#0a0e0b] font-bold rounded shadow-[0_0_8px_rgba(46,204,113,0.3)]">[ PASTE JSON ]</button>
+<button class="px-3 py-1 border border-[#1b2a20] text-[#7ddfb2] hover:bg-[#1b2a20] transition-colors">[ /scan/full ]</button>
+<button class="px-3 py-1 border border-[#1b2a20] text-[#7ddfb2] hover:bg-[#1b2a20] transition-colors">[ /correlation/full ]</button>
+<button class="px-3 py-1 border border-[#1b2a20] text-[#7ddfb2] hover:bg-[#1b2a20] transition-colors">[ /unified-profile-analysis ]</button>
+</div>
+</div>
+<div class="relative">
+<textarea class="w-full h-48 bg-[#0a130f] border border-[#1b2a20] focus:border-[#2ecc71] focus:ring-1 focus:ring-[#2ecc71] text-[#7ddfb2] text-[13px] font-jetbrains p-4 resize-none leading-relaxed" spellcheck="false">{
+  "target": "john.doe@example.com",
+  "priority": "HIGH",
+  "modules": {
+    "mosint": true,
+    "phone": true,
+    "darkweb": true,
+    "geo": true,
+    "social": true
+  },
+  "deep_correlation": true
+}</textarea>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-[11px] text-[#7ddfb2] font-bold">CONTEXT (opt):</label>
+<input class="bg-[#0a130f] border border-[#1b2a20] focus:border-[#2ecc71] focus:ring-1 focus:ring-[#2ecc71] text-[#7ddfb2] text-[13px] px-4 py-2 w-full" placeholder="additional notes..." type="text"/>
+</div>
+<div class="flex items-center justify-between border-t border-[#1b2a20] pt-4 mt-2">
+<div class="text-[10px] text-[#7ddfb2] opacity-60 font-bold tracking-widest">
+                            tokens: 1,247 / 12,000
+                        </div>
+<button class="px-8 py-3 bg-[#2ecc71] text-[#0a0e0b] font-black uppercase tracking-widest text-sm hover:bg-[#00f08a] transition-all duration-150 active:scale-95 shadow-[0_0_20px_rgba(46,204,113,0.3)]" id="btn-run-analysis">
+                            &gt; RUN ANALYSIS
+                        </button>
+</div>
+</div>
+</div>
+</section>
+<!-- Section B: RESULTS -->
+<section class="grid grid-cols-10 gap-6">
+<!-- Left Column: RESULT SUMMARY -->
+<div class="col-span-4 bg-[#0f1712] border border-[#1b2a20] rounded-lg flex flex-col h-full">
+<div class="p-4 border-b border-[#1b2a20] flex justify-between items-center bg-[#0a130f]">
+<span class="text-[11px] font-bold uppercase tracking-widest text-[#2ecc71]">RESULT SUMMARY</span>
+<span class="material-symbols-outlined text-[#7ddfb2] text-sm">assessment</span>
+</div>
+<div class="p-6 space-y-6 flex-1">
+<!-- Risk Block -->
+<div class="border border-[#ffaa00] bg-[#ffaa00]/5 p-6 rounded-lg text-center" id="risk-block">
+<div class="text-[10px] text-[#ffaa00] font-bold tracking-tighter mb-1 uppercase" id="risk-label">RISK LEVEL: —</div>
+<div class="text-5xl font-black text-[#ffaa00] mb-4" id="risk-score">—</div>
+<div class="w-full bg-[#1b2a20] h-1.5 rounded-full overflow-hidden">
+<div class="bg-[#ffaa00] h-full shadow-[0_0_8px_#ffaa00]" id="risk-bar" style="width:0%"></div>
+</div>
+</div>
+<!-- Findings -->
+<div class="space-y-3">
+<h3 class="text-[11px] font-bold text-[#2ecc71] uppercase tracking-wider mb-2">KEY FINDINGS</h3>
+<div class="space-y-2 text-[12px] text-[#7ddfb2]" id="llm-findings">
+<div class="flex gap-3">
+<span class="text-[#2ecc71] font-bold">01</span>
+<p>Critical data breach detected (Canva, 2019).</p>
+</div>
+<div class="flex gap-3">
+<span class="text-[#2ecc71] font-bold">02</span>
+<p>Password pattern reuse across 3 platforms.</p>
+</div>
+<div class="flex gap-3">
+<span class="text-[#2ecc71] font-bold">03</span>
+<p>Geolocation cluster identified: Izmir, Turkey.</p>
+</div>
+<div class="flex gap-3">
+<span class="text-[#2ecc71] font-bold">04</span>
+<p>Active LinkedIn and GitHub profiles correlated.</p>
+</div>
+<div class="flex gap-3">
+<span class="text-[#2ecc71] font-bold">05</span>
+<p>SSH public key found on secondary forum.</p>
+</div>
+</div>
+</div>
+<!-- Recommendations -->
+<div class="space-y-3 pt-4 border-t border-[#1b2a20]">
+<h3 class="text-[11px] font-bold text-[#2ecc71] uppercase tracking-wider mb-2">RECOMMENDATIONS</h3>
+<ul class="space-y-1.5 text-[12px] text-[#7ddfb2]" id="llm-recs">
+<li class="flex items-start gap-2">› <span class="flex-1">Rotate all credentials immediately.</span></li>
+<li class="flex items-start gap-2">› <span class="flex-1">Enable 2FA on primary email account.</span></li>
+<li class="flex items-start gap-2">› <span class="flex-1">Set up dark web monitoring alerts.</span></li>
+</ul>
+</div>
+</div>
+<div class="p-4 border-t border-[#1b2a20] bg-[#0a130f] text-[10px] text-[#7ddfb2]/50 font-bold uppercase tracking-widest flex justify-between">
+<span>gemini-3.5-flash</span>
+<span>t: 3,412 / lat: 1.2s</span>
+</div>
+</div>
+<!-- Right Column: RAW MODEL OUTPUT -->
+<div class="col-span-6 bg-[#0f1712] border border-[#1b2a20] rounded-lg flex flex-col h-full overflow-hidden relative">
+<div class="absolute inset-0 scanline-overlay opacity-5 z-0"></div>
+<div class="p-4 border-b border-[#1b2a20] flex items-center justify-between bg-[#0a130f] z-10">
+<div class="flex gap-2">
+<button class="px-3 py-1 bg-[#1b2a20] text-[#00f08a] text-[10px] font-bold rounded border border-[#2ecc71]/20">JSON</button>
+<button class="px-3 py-1 text-[#7ddfb2] text-[10px] font-bold hover:text-[#2ecc71]">TEXT</button>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center gap-1.5 text-[10px] font-bold text-[#7ddfb2] hover:text-[#2ecc71]">
+<span class="material-symbols-outlined text-[14px]">content_copy</span> [ COPY ]
+                        </button>
+<button class="flex items-center gap-1.5 text-[10px] font-bold text-[#7ddfb2] hover:text-[#2ecc71]">
+<span class="material-symbols-outlined text-[14px]">download</span> [ DOWNLOAD ]
+                        </button>
+</div>
+</div>
+<div class="flex-1 bg-[#07100d] p-6 text-[13px] leading-relaxed overflow-auto relative z-10">
+<div class="flex font-jetbrains">
+<div class="w-10 text-[#1b2a20] select-none flex flex-col pr-4 border-r border-[#1b2a20] text-right">
+<span>01</span><span>02</span><span>03</span><span>04</span><span>05</span><span>06</span><span>07</span><span>08</span><span>09</span><span>10</span><span>11</span><span>12</span><span>13</span><span>14</span><span>15</span>
+</div>
+<div class="pl-6 text-[#7ddfb2] whitespace-pre" id="raw-output">{
+  <span class="text-[#2ecc71]">"analysis_id"</span>: "OS-4421-X",
+  <span class="text-[#2ecc71]">"status"</span>: "SUCCESS",
+  <span class="text-[#2ecc71]">"target"</span>: "john.doe@example.com",
+  <span class="text-[#2ecc71]">"intelligence_report"</span>: {
+    <span class="text-[#2ecc71]">"breach_summary"</span>: [
+      { <span class="text-[#2ecc71]">"source"</span>: "Canva", <span class="text-[#2ecc71]">"date"</span>: "2019-05-24" },
+      { <span class="text-[#2ecc71]">"source"</span>: "Wattpad", <span class="text-[#2ecc71]">"date"</span>: "2020-06-12" }
+    ],
+    <span class="text-[#2ecc71]">"geospatial"</span>: {
+      <span class="text-[#2ecc71]">"primary_ip"</span>: "85.101.32.14",
+      <span class="text-[#2ecc71]">"country"</span>: "Turkey",
+      <span class="text-[#2ecc71]">"city"</span>: "Izmir"
+    },
+    <span class="text-[#2ecc71]">"social_footprint"</span>: "LinkedIn_CONFIRMED, GitHub_CONFIRMED",
+    <span class="text-[#2ecc71]">"risk_score"</span>: 67
+  }
+}█<span class="caret-blink text-[#2ecc71]">_</span></div>
+</div>
+</div>
+<div class="p-2 bg-[#0a130f] border-t border-[#1b2a20] flex items-center justify-between px-4 z-10">
+<div class="flex items-center gap-2">
+<div class="w-2 h-2 rounded-full bg-[#2ecc71] shadow-[0_0_6px_#2ecc71]"></div>
+<span class="text-[10px] text-[#2ecc71] font-bold tracking-widest">STREAMED 100%</span>
+</div>
+<div class="text-[9px] text-[#7ddfb2]/40">MD5: B47C9E...F2A</div>
+</div>
+</div>
+</section>
+<!-- Section C: FOOTER STRIP -->
+<footer class="mt-8 border border-[#1b2a20] bg-[#0f1712] p-4 rounded flex items-center gap-6">
+<div class="text-[#2ecc71] text-[11px] font-bold flex items-center gap-2 whitespace-nowrap" id="run-status">
+                [ ✓ COMPLETE ]
+            </div>
+<div class="flex-1 h-1 bg-[#1b2a20] rounded-full overflow-hidden">
+<div class="h-full bg-[#2ecc71] w-full shadow-[0_0_8px_#2ecc71]"></div>
+</div>
+<div class="text-[#7ddfb2] text-[11px] font-bold uppercase tracking-widest whitespace-nowrap opacity-60">
+                next run available in 12s
+            </div>
+</footer>
+</main>
+<!-- UI Overlay elements -->
+<div class="fixed bottom-6 right-6 z-50 pointer-events-none">
+<div class="bg-[#0f1712] border border-[#2ecc71]/30 p-3 rounded text-[9px] text-[#7ddfb2] uppercase tracking-[0.2em] shadow-2xl flex flex-col gap-1 items-end">
+<div>SYSTEM_UPTIME: 142:09:12</div>
+<div class="text-[#2ecc71]">ENCRYPTION_MODE: AES-256</div>
+</div>
+</div>
+<script>
+const BASE = "http://localhost:8000";
+const STORAGE_TARGET = "argos.target";
+function escapeHtml(s) {
+  if (s == null) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+const NAV_MAP = {
+  "overview": "/stitch/dashboard.html",
+  "phone lookup": "/stitch/profile.html#phone",
+  "dark web": "/stitch/profile.html#darkweb",
+  "domain search": "/stitch/profile.html#domain",
+  "email osint": "/stitch/profile.html#email",
+  "geo photo": "/stitch/profile.html#geo",
+  "face search": "/stitch/profile.html#face",
+  "correlation": "/stitch/correlation.html",
+  "llm analysis": "/stitch/llm_analysis.html",
+  "report": "/stitch/report.html",
+};
+
+function wireSidebar() {
+  document.querySelectorAll("aside a").forEach(a => {
+    const t = a.textContent.replace(/\s+/g, ' ').trim().toLowerCase();
+    for (const k in NAV_MAP) { if (t.includes(k)) { a.href = NAV_MAP[k]; break; } }
+  });
+}
+
+const RISK_COLORS = { low: "#2ecc71", medium: "#ffaa00", high: "#ff8800", critical: "#ff4444" };
+const RISK_SCORES = { low: 25, medium: 50, high: 75, critical: 95 };
+
+function setStatus(text, color) {
+  const el = document.getElementById("run-status");
+  if (el) { el.textContent = text; el.style.color = color || "#2ecc71"; }
+}
+
+function renderResult(data) {
+  const level = (data.risk_level || "medium").toLowerCase();
+  const c = RISK_COLORS[level] || "#ffaa00";
+  const score = data.score || RISK_SCORES[level] || 50;
+
+  const block = document.getElementById("risk-block");
+  if (block) { block.style.borderColor = c; block.style.background = c + "11"; }
+  const lbl = document.getElementById("risk-label");
+  if (lbl) { lbl.textContent = "RISK LEVEL: " + level.toUpperCase(); lbl.style.color = c; }
+  const rs = document.getElementById("risk-score");
+  if (rs) { rs.textContent = score + "/100"; rs.style.color = c; }
+  const bar = document.getElementById("risk-bar");
+  if (bar) { bar.style.width = score + "%"; bar.style.background = c; }
+
+  const findings = document.getElementById("llm-findings");
+  if (findings) findings.innerHTML = (data.key_findings || []).map((f, i) =>
+    '<div class="flex gap-3"><span class="text-[#2ecc71] font-bold">' + String(i + 1).padStart(2, "0") + '</span><p>' + escapeHtml(f) + "</p></div>"
+  ).join("");
+
+  const recs = document.getElementById("llm-recs");
+  if (recs) recs.innerHTML = (data.recommendations || []).map(r =>
+    '<li class="flex items-start gap-2">› <span class="flex-1">' + escapeHtml(r) + "</span></li>"
+  ).join("");
+
+  const raw = document.getElementById("raw-output");
+  if (raw) {
+    const clean = JSON.stringify(data, null, 2);
+    raw.textContent = clean + "\n\n[ analysis complete • tokens: " + (data.raw_prompt_tokens || 0) + " ]";
+  }
+}
+
+async function runAnalysis() {
+  const textarea = document.querySelector("textarea");
+  const ctx = document.querySelector('input[placeholder="additional notes..."]');
+  const btn = document.getElementById("btn-run-analysis");
+
+  let inputData;
+  const raw = (textarea && textarea.value.trim()) || "";
+  try { inputData = JSON.parse(raw); } catch (_) { inputData = { target: raw || sessionStorage.getItem(STORAGE_TARGET) || "" }; }
+
+  if (btn) { btn.disabled = true; btn.textContent = "ANALYZING..."; }
+  setStatus("[ RUNNING... ]", "#ffaa00");
+
+  try {
+    const body = { data: inputData };
+    if (ctx && ctx.value.trim()) body.context = ctx.value.trim();
+    const r = await fetch(BASE + "/analysis/osint", {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Accept: "application/json" },
+      body: JSON.stringify(body),
+    });
+    if (!r.ok) throw new Error(r.status + " " + r.statusText);
+    const data = await r.json();
+    if (data.error) throw new Error(data.error);
+    renderResult(data);
+    setStatus("[ ✓ COMPLETE ]", "#2ecc71");
+  } catch (e) {
+    setStatus("[ ERR ] " + e.message, "#ff4444");
+    const raw = document.getElementById("raw-output");
+    if (raw) raw.textContent = "ERROR: " + e.message;
+  } finally {
+    if (btn) { btn.disabled = false; btn.textContent = "> RUN ANALYSIS"; }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  wireSidebar();
+  const target = sessionStorage.getItem(STORAGE_TARGET) || "";
+  const textarea = document.querySelector("textarea");
+  if (textarea && target && !textarea.value.includes(target)) {
+    try {
+      const parsed = JSON.parse(textarea.value);
+      parsed.target = target;
+      textarea.value = JSON.stringify(parsed, null, 2);
+    } catch (_) { textarea.value = JSON.stringify({ target }, null, 2); }
+  }
+  const btn = document.getElementById("btn-run-analysis");
+  if (btn) btn.addEventListener("click", runAnalysis);
+  // textarea focus glow
+  if (textarea) {
+    textarea.addEventListener("focus", () => textarea.parentElement.classList.add("shadow-[0_0_15px_rgba(46,204,113,0.1)]"));
+    textarea.addEventListener("blur", () => textarea.parentElement.classList.remove("shadow-[0_0_15px_rgba(46,204,113,0.1)]"));
+  }
+});
+      function toggleSidebar() {
+    var s = document.getElementById('sidebar');
+    if (s) s.classList.toggle('sidebar-open');
+  }</script>
+</body></html>

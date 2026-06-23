@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>ARGOS OSINT — REPORT GENERATION</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries">  function toggleSidebar() {
+    var s = document.getElementById('sidebar');
+    if (s) s.classList.toggle('sidebar-open');
+  }</script>
+<link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700;800&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        'bg': '#0a0e0b',
+                        'surface': '#0f1712',
+                        'surface-2': '#0a130f',
+                        'accent': '#2ecc71',
+                        'accent-bright': '#00f08a',
+                        'text-primary': '#e9fff6',
+                        'text-secondary': '#7ddfb2',
+                        'danger': '#ff4444',
+                        'warning': '#ffaa00',
+                        'border': '#1b2a20',
+                    },
+                    borderRadius: {
+                        "DEFAULT": "0.125rem",
+                        "lg": "0.25rem",
+                        "xl": "0.5rem",
+                        "full": "0.75rem"
+                    },
+                    fontFamily: {
+                        "headline": ["JetBrains Mono", "monospace"],
+                        "display": ["JetBrains Mono", "monospace"],
+                        "body": ["JetBrains Mono", "monospace"],
+                        "label": ["JetBrains Mono", "monospace"]
+                    }
+                },
+            },
+        }
+      function toggleSidebar() {
+    var s = document.getElementById('sidebar');
+    if (s) s.classList.toggle('sidebar-open');
+  }</script>
+<style>
+        body {
+            background-color: #0a0e0b;
+            color: #e9fff6;
+            font-family: 'JetBrains Mono', monospace;
+        }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        .glow-accent {
+            box-shadow: 0 0 12px rgba(46, 204, 113, 0.25);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #0a130f;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #1b2a20;
+        }
+        .scanline-overlay {
+            background: linear-gradient(rgba(18, 16, 16, 0) 50%, rgba(0, 0, 0, 0.25) 50%), linear-gradient(90deg, rgba(255, 0, 0, 0.06), rgba(0, 255, 0, 0.02), rgba(0, 0, 255, 0.06));
+            background-size: 100% 2px, 3px 100%;
+            pointer-events: none;
+        }
+        @keyframes spinner {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .animate-spin-custom {
+            animation: spinner 2s linear infinite;
+        }
+      @media (max-width: 768px) {
+    #sidebar { transform: translateX(-100%); transition: transform 0.2s ease; position: fixed; z-index: 50; }
+    #sidebar.sidebar-open { transform: translateX(0); }
+    #main-content { margin-left: 0 !important; }
+    #hamburger { display: flex; }
+  }
+  @media (min-width: 769px) { #hamburger { display: none; } }</style>
+</head>
+<body class="antialiased selection:bg-accent selection:text-bg overflow-hidden">
+<button id="hamburger" onclick="toggleSidebar()" style="display:none" class="fixed top-3 left-3 z-[60] text-[#2ecc71] font-mono text-xl bg-[#0a0e0b] border border-[#1b2a20] px-2 py-1 leading-none hover:bg-[#1b2a20] transition-colors">&#9776;</button>
+<!-- SIDE NAV BAR -->
+<aside class="fixed left-0 top-0 h-screen flex flex-col py-6 w-[240px] bg-[#0a0e0b] border-r border-[#1b2a20] z-50" id="sidebar">
+<div class="px-6 mb-10">
+<h1 class="text-xl font-headline font-black tracking-widest text-[#2ecc71]">ARGOS OSINT</h1>
+<p class="text-[10px] text-[#7ddfb2] tracking-widest mt-1 opacity-70">V 4.0.2 - STABLE</p>
+</div>
+<nav class="flex-1 flex flex-col gap-1 overflow-y-auto custom-scrollbar">
+<!-- Navigation Items Mapping from JSON -->
+<a class="px-6 py-3 flex items-center gap-3 transition-colors duration-150 text-[#7ddfb2] hover:bg-[#0f1712] hover:text-[#00f08a] font-body uppercase tracking-[2px] text-[13px]" href="#">
+<span class="material-symbols-outlined text-[18px]">terminal</span> OVERVIEW
+            </a>
+<a class="px-6 py-3 flex items-center gap-3 transition-colors duration-150 text-[#7ddfb2] hover:bg-[#0f1712] hover:text-[#00f08a] font-body uppercase tracking-[2px] text-[13px]" href="#">
+<span class="material-symbols-outlined text-[18px]">phone_iphone</span> PHONE LOOKUP
+            </a>
+<a class="px-6 py-3 flex items-center gap-3 transition-colors duration-150 text-[#7ddfb2] hover:bg-[#0f1712] hover:text-[#00f08a] font-body uppercase tracking-[2px] text-[13px]" href="#">
+<span class="material-symbols-outlined text-[18px]">language</span> DARK WEB
+            </a>
+<a class="px-6 py-3 flex items-center gap-3 transition-colors duration-150 text-[#7ddfb2] hover:bg-[#0f1712] hover:text-[#00f08a] font-body uppercase tracking-[2px] text-[13px]" href="#">
+<span class="material-symbols-outlined text-[18px]">public</span> DOMAIN SEARCH
+            </a>
+<a class="px-6 py-3 flex items-center gap-3 transition-colors duration-150 text-[#7ddfb2] hover:bg-[#0f1712] hover:text-[#00f08a] font-body uppercase tracking-[2px] text-[13px]" href="#">
+<span class="material-symbols-outlined text-[18px]">alternate_email</span> EMAIL OSINT
+            </a>
+<a class="px-6 py-3 flex items-center gap-3 transition-colors duration-150 text-[#7ddfb2] hover:bg-[#0f1712] hover:text-[#00f08a] font-body uppercase tracking-[2px] text-[13px]" href="#">
+<span class="material-symbols-outlined text-[18px]">location_on</span> GEO PHOTO
+            </a>
+<a class="px-6 py-3 flex items-center gap-3 transition-colors duration-150 text-[#7ddfb2] hover:bg-[#0f1712] hover:text-[#00f08a] font-body uppercase tracking-[2px] text-[13px]" href="#">
+<span class="material-symbols-outlined text-[18px]">face</span> FACE SEARCH
+            </a>
+<a class="px-6 py-3 flex items-center gap-3 transition-colors duration-150 text-[#7ddfb2] hover:bg-[#0f1712] hover:text-[#00f08a] font-body uppercase tracking-[2px] text-[13px]" href="#">
+<span class="material-symbols-outlined text-[18px]">hub</span> CORRELATION
+            </a>
+<a class="px-6 py-3 flex items-center gap-3 transition-colors duration-150 text-[#7ddfb2] hover:bg-[#0f1712] hover:text-[#00f08a] font-body uppercase tracking-[2px] text-[13px]" href="#">
+<span class="material-symbols-outlined text-[18px]">psychology</span> LLM ANALYSIS
+            </a>
+<!-- Active State for REPORT -->
+<a class="px-6 py-3 flex items-center gap-3 transition-colors duration-150 font-body uppercase tracking-[2px] text-[13px] text-[#00f08a] border-l-2 border-[#2ecc71] bg-[#0f1712] font-bold shadow-[0_0_12px_rgba(46,204,113,0.15)]" href="#">
+<span class="material-symbols-outlined text-[18px]">description</span> REPORT
+            </a>
+</nav>
+<div class="px-6 mt-auto">
+<button class="w-full py-3 bg-accent text-bg font-bold tracking-widest text-[11px] uppercase hover:bg-accent-bright transition-all active:scale-[0.98] glow-accent">
+                INITIATE SCAN
+            </button>
+<div class="flex items-center gap-3 mt-6 pt-6 border-t border-[#1b2a20]">
+<div class="w-8 h-8 rounded-sm bg-accent/20 flex items-center justify-center">
+<span class="material-symbols-outlined text-accent text-sm">person</span>
+</div>
+<div>
+<p class="text-[10px] font-bold text-text-primary leading-none uppercase">Root Admin</p>
+<p class="text-[9px] text-text-secondary leading-none mt-1">SYS_OPS_01</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- TOP APP BAR -->
+<header class="fixed top-0 right-0 h-14 bg-[#0f1712]/90 backdrop-blur-md border-b border-[#1b2a20] flex items-center justify-between px-6 z-40 ml-[240px] w-[calc(100%-240px)]">
+<div class="flex items-center gap-4">
+<div class="flex items-center gap-2 text-[11px] font-body uppercase tracking-widest">
+<span class="text-text-secondary">REPORT</span>
+<span class="text-border">/</span>
+<span class="text-accent">GENERATE</span>
+</div>
+</div>
+<div class="flex items-center gap-6">
+<div class="flex items-center gap-2">
+<span class="w-2 h-2 rounded-full bg-accent animate-pulse"></span>
+<span class="text-[10px] text-accent tracking-tighter uppercase">System Nominal</span>
+</div>
+<div class="h-4 w-[1px] bg-border mx-2"></div>
+<div class="flex items-center gap-4">
+<button class="text-text-secondary hover:text-accent transition-colors duration-150">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="text-text-secondary hover:text-accent transition-colors duration-150">
+<span class="material-symbols-outlined text-[20px]">settings</span>
+</button>
+<button class="text-text-secondary hover:text-accent transition-colors duration-150">
+<span class="material-symbols-outlined text-[20px]">admin_panel_settings</span>
+</button>
+</div>
+</div>
+</header>
+<!-- MAIN AREA -->
+<main id="main-content" class="ml-[240px] mt-14 p-6 h-[calc(100vh-56px)] flex gap-6 overflow-hidden">
+<!-- LEFT COLUMN: BUILD REPORT -->
+<div class="w-[460px] flex flex-col gap-4 overflow-y-auto custom-scrollbar pr-2 pb-6">
+<!-- TARGET CARD -->
+<div class="bg-surface border border-border p-5 relative overflow-hidden group">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-xs font-black tracking-[3px] text-text-primary uppercase border-b-2 border-accent pb-1 inline-block">TARGET</h3>
+<span class="text-[10px] text-accent/50 font-bold tracking-widest">ID: 4882-90</span>
+</div>
+<div class="space-y-4">
+<div class="space-y-1">
+<label class="text-[10px] text-text-secondary uppercase tracking-widest font-bold">Target ID</label>
+<div class="bg-surface-2 border border-border px-3 py-2 flex items-center justify-between">
+<span class="text-xs text-accent" id="report-target-display">john.doe@example.com</span>
+<span class="text-accent material-symbols-outlined text-sm">check_circle</span>
+</div>
+</div>
+<div class="space-y-1">
+<label class="text-[10px] text-text-secondary uppercase tracking-widest font-bold">Alias</label>
+<div class="bg-surface-2 border border-border px-3 py-2">
+<span class="text-xs text-text-primary">JOHN DOE</span>
+</div>
+</div>
+<div class="grid grid-cols-1 gap-2 pt-2">
+<label class="flex items-center justify-between cursor-pointer group/toggle">
+<span class="text-[10px] text-text-primary uppercase tracking-wider font-medium">Include PII</span>
+<div class="w-8 h-4 bg-accent/20 border border-accent/40 relative">
+<div class="absolute top-0 bottom-0 left-4 right-0 bg-accent shadow-[0_0_8px_rgba(46,204,113,0.4)]"></div>
+</div>
+</label>
+<label class="flex items-center justify-between cursor-pointer group/toggle">
+<span class="text-[10px] text-text-primary uppercase tracking-wider font-medium">Mask Sensitive Data</span>
+<div class="w-8 h-4 bg-accent/20 border border-accent/40 relative">
+<div class="absolute top-0 bottom-0 left-4 right-0 bg-accent shadow-[0_0_8px_rgba(46,204,113,0.4)]"></div>
+</div>
+</label>
+<label class="flex items-center justify-between cursor-pointer group/toggle opacity-50">
+<span class="text-[10px] text-text-primary uppercase tracking-wider font-medium">Embed Raw JSON</span>
+<div class="w-8 h-4 bg-border relative">
+<div class="absolute top-0 bottom-0 left-0 right-4 bg-text-secondary/20"></div>
+</div>
+</label>
+</div>
+</div>
+</div>
+<!-- MODULES CARD -->
+<div class="bg-surface border border-border p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-xs font-black tracking-[3px] text-text-primary uppercase border-b-2 border-accent pb-1">MODULES TO INCLUDE</h3>
+<span class="text-[10px] text-accent font-bold">8 / 9 SELECTED</span>
+</div>
+<div class="space-y-2 max-h-64 overflow-y-auto custom-scrollbar pr-2">
+<!-- Module Items -->
+<div class="flex items-center justify-between p-2 bg-surface-2 border border-border/50 hover:border-accent/40 transition-all">
+<div class="flex items-center gap-3">
+<div class="w-4 h-4 border border-accent bg-accent/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-accent font-bold">check</span>
+</div>
+<div>
+<p class="text-[11px] font-bold text-text-primary tracking-wide">IDENTITY VERIFICATION</p>
+<p class="text-[9px] text-text-secondary">/mosint/full</p>
+</div>
+</div>
+<span class="w-2 h-2 rounded-full bg-accent shadow-[0_0_6px_rgba(46,204,113,0.4)]"></span>
+</div>
+<div class="flex items-center justify-between p-2 bg-surface-2 border border-border/50 hover:border-accent/40 transition-all">
+<div class="flex items-center gap-3">
+<div class="w-4 h-4 border border-accent bg-accent/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-accent font-bold">check</span>
+</div>
+<div>
+<p class="text-[11px] font-bold text-text-primary tracking-wide">SOCIAL FOOTPRINT</p>
+<p class="text-[9px] text-text-secondary">/crawl/social_graph</p>
+</div>
+</div>
+<span class="w-2 h-2 rounded-full bg-accent shadow-[0_0_6px_rgba(46,204,113,0.4)]"></span>
+</div>
+<div class="flex items-center justify-between p-2 bg-surface-2 border border-border/50 hover:border-accent/40 transition-all">
+<div class="flex items-center gap-3">
+<div class="w-4 h-4 border border-accent bg-accent/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-accent font-bold">check</span>
+</div>
+<div>
+<p class="text-[11px] font-bold text-text-primary tracking-wide">BREACH HISTORY</p>
+<p class="text-[9px] text-text-secondary">/db/breached_v2</p>
+</div>
+</div>
+<span class="w-2 h-2 rounded-full bg-warning shadow-[0_0_6px_rgba(255,170,0,0.4)]"></span>
+</div>
+<div class="flex items-center justify-between p-2 bg-surface-2 border border-border/50 opacity-40">
+<div class="flex items-center gap-3">
+<div class="w-4 h-4 border border-border bg-transparent flex items-center justify-center"></div>
+<div>
+<p class="text-[11px] font-bold text-text-secondary tracking-wide">LLM ANALYSIS</p>
+<p class="text-[9px] text-text-secondary/60">/ai/correlation_model</p>
+</div>
+</div>
+<span class="w-2 h-2 rounded-full bg-border"></span>
+</div>
+<!-- More modules for scroll depth -->
+<div class="flex items-center justify-between p-2 bg-surface-2 border border-border/50">
+<div class="flex items-center gap-3">
+<div class="w-4 h-4 border border-accent bg-accent/10 flex items-center justify-center">
+<span class="material-symbols-outlined text-[12px] text-accent font-bold">check</span>
+</div>
+<div>
+<p class="text-[11px] font-bold text-text-primary tracking-wide">GEO SPATIAL DATA</p>
+<p class="text-[9px] text-text-secondary">/maps/exif_locator</p>
+</div>
+</div>
+<span class="w-2 h-2 rounded-full bg-accent"></span>
+</div>
+</div>
+</div>
+<!-- FORMAT CARD -->
+<div class="bg-surface border border-border p-5">
+<div class="flex items-center justify-between mb-4">
+<h3 class="text-xs font-black tracking-[3px] text-text-primary uppercase border-b-2 border-accent pb-1">FORMAT</h3>
+</div>
+<div class="grid grid-cols-3 gap-3 mb-4">
+<button class="border-2 border-accent bg-accent/5 p-3 flex flex-col items-center gap-2 glow-accent group relative overflow-hidden">
+<div class="absolute inset-0 bg-accent/10 opacity-20 pointer-events-none"></div>
+<span class="text-xs font-bold text-accent tracking-tighter">PDF</span>
+<span class="text-[9px] text-accent/70">EXPORT</span>
+</button>
+<button class="border border-border bg-surface-2 p-3 flex flex-col items-center gap-2 hover:border-accent/40 transition-colors">
+<span class="text-xs font-bold text-text-primary tracking-tighter">JSON</span>
+<span class="text-[9px] text-text-secondary">EXPORT</span>
+</button>
+<button class="border border-border bg-surface-2 p-3 flex flex-col items-center gap-2 hover:border-accent/40 transition-colors">
+<span class="text-xs font-bold text-text-primary tracking-tighter">HTML</span>
+<span class="text-[9px] text-text-secondary">EXPORT</span>
+</button>
+</div>
+<div class="space-y-3">
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-text-secondary uppercase font-bold">Paper Size</span>
+<select class="bg-surface-2 border border-border text-xs text-text-primary px-2 py-1 outline-none">
+<option>A4 (210 x 297 mm)</option>
+<option>LETTER</option>
+<option>LEGAL</option>
+</select>
+</div>
+<div class="flex items-center justify-between">
+<span class="text-[10px] text-text-secondary uppercase font-bold">Watermark</span>
+<input class="bg-surface-2 border border-border text-xs text-accent px-2 py-1 w-48 text-right outline-none font-bold" type="text" value="FOOTPRINT // CONFIDENTIAL"/>
+</div>
+</div>
+</div>
+<!-- ACTIONS -->
+<div class="mt-2 space-y-3">
+<button class="w-full py-4 bg-accent text-bg font-black tracking-[4px] text-sm uppercase hover:bg-accent-bright transition-all active:scale-[0.98] glow-accent flex items-center justify-center gap-3" id="btn-generate">
+                    › GENERATE REPORT
+                </button>
+<div class="flex items-center justify-between px-1">
+<div class="flex items-center gap-2">
+<span class="text-accent text-[12px] animate-spin-custom">·•·</span>
+<span class="text-[9px] text-text-secondary uppercase tracking-widest font-medium">next run in 4s</span>
+</div>
+<span class="text-[9px] text-text-secondary uppercase tracking-widest font-medium opacity-50">rate limit 5/min</span>
+</div>
+</div>
+</div>
+<!-- RIGHT COLUMN: PREVIEW -->
+<div class="flex-1 bg-surface border border-border flex flex-col overflow-hidden">
+<!-- PREVIEW HEADER -->
+<div class="p-4 border-b border-border flex items-center justify-between bg-surface-2/50">
+<div class="flex items-center gap-4">
+<h3 class="text-xs font-black tracking-[3px] text-text-primary uppercase border-b-2 border-accent pb-1">PREVIEW</h3>
+<div class="flex gap-2 ml-4">
+<button class="text-[9px] font-bold bg-accent/20 text-accent px-3 py-1 border border-accent/40">[ OUTLINE ]</button>
+<button class="text-[9px] font-bold text-text-secondary px-3 py-1 border border-border hover:text-accent transition-colors">[ RENDER ]</button>
+</div>
+</div>
+<div class="flex items-center gap-2">
+<span class="text-[10px] text-text-secondary font-bold">PAGE 1 / 14</span>
+<div class="flex border border-border">
+<button class="p-1 text-text-secondary hover:text-accent border-r border-border"><span class="material-symbols-outlined text-sm">chevron_left</span></button>
+<button class="p-1 text-text-secondary hover:text-accent"><span class="material-symbols-outlined text-sm">chevron_right</span></button>
+</div>
+</div>
+</div>
+<!-- PREVIEW BODY (FAUX DOCUMENT) -->
+<div class="flex-1 overflow-y-auto p-8 bg-surface-2 relative custom-scrollbar">
+<div class="scanline-overlay absolute inset-0 opacity-10 pointer-events-none"></div>
+<div class="max-w-3xl mx-auto bg-surface-2 border border-accent/30 p-10 min-h-[1000px] shadow-[0_0_40px_rgba(46,204,113,0.05)] relative group">
+<!-- Corner Brackets -->
+<div class="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-accent/30"></div>
+<div class="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-accent/30"></div>
+<div class="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-accent/30"></div>
+<div class="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-accent/30"></div>
+<div class="border-b border-accent/20 pb-6 mb-10 flex justify-between items-start">
+<div>
+<h2 class="text-xl font-black text-accent tracking-[5px] mb-2 uppercase">DOSSIER_REPORT</h2>
+<p class="text-[10px] text-text-secondary tracking-widest uppercase">ID: FP-ALPHA-0992384-X</p>
+</div>
+<div class="text-right">
+<p class="text-[9px] text-text-secondary uppercase">timestamp: 2023.10.24-14:22:01</p>
+<p class="text-[9px] text-text-secondary uppercase">clearance: TOP SECRET // SI-TK</p>
+</div>
+</div>
+<div class="space-y-6">
+<h4 class="text-xs font-black text-text-primary tracking-widest border-l-4 border-accent pl-3 mb-6 uppercase">Table of Contents</h4>
+<div class="space-y-4">
+<!-- Section list -->
+<div class="flex items-center justify-between group/line border-b border-border/20 py-2">
+<div class="flex items-center gap-4">
+<span class="text-[10px] text-accent font-bold">01</span>
+<span class="text-[11px] text-text-primary uppercase font-bold tracking-wider">EXECUTIVE SUMMARY</span>
+</div>
+<span class="text-[9px] text-accent font-bold uppercase bg-accent/10 px-2 py-0.5">FOUND</span>
+</div>
+<div class="flex items-center justify-between group/line border-b border-border/20 py-2">
+<div class="flex items-center gap-4">
+<span class="text-[10px] text-accent font-bold">02</span>
+<span class="text-[11px] text-text-primary uppercase font-bold tracking-wider">PRIMARY SUBJECT PROFILE</span>
+</div>
+<span class="text-[9px] text-accent/60 font-bold uppercase">●●●●●</span>
+</div>
+<div class="flex items-center justify-between group/line border-b border-border/20 py-2">
+<div class="flex items-center gap-4">
+<span class="text-[10px] text-accent font-bold">03</span>
+<span class="text-[11px] text-text-primary uppercase font-bold tracking-wider">COMMUNICATION CHANNELS</span>
+</div>
+<span class="text-[9px] text-warning font-bold uppercase">PARTIAL</span>
+</div>
+<div class="flex items-center justify-between group/line border-b border-border/20 py-2">
+<div class="flex items-center gap-4">
+<span class="text-[10px] text-accent font-bold">04</span>
+<span class="text-[11px] text-text-primary uppercase font-bold tracking-wider">GEOGRAPHIC MOVEMENT MAP</span>
+</div>
+<span class="text-[9px] text-accent font-bold uppercase">GRAPH</span>
+</div>
+<div class="flex items-center justify-between group/line border-b border-border/20 py-2">
+<div class="flex items-center gap-4">
+<span class="text-[10px] text-accent font-bold">05</span>
+<span class="text-[11px] text-text-primary uppercase font-bold tracking-wider">ASSOCIATED ENTITIES (L2)</span>
+</div>
+<span class="text-[9px] text-accent/40 font-bold uppercase">●●●○○</span>
+</div>
+<div class="flex items-center justify-between group/line border-b border-border/20 py-2">
+<div class="flex items-center gap-4">
+<span class="text-[10px] text-accent font-bold">06</span>
+<span class="text-[11px] text-text-primary uppercase font-bold tracking-wider">DARK WEB LEAK AUDIT</span>
+</div>
+<span class="text-[9px] text-danger font-bold uppercase">CRITICAL</span>
+</div>
+<div class="flex items-center justify-between group/line border-b border-border/20 py-2">
+<div class="flex items-center gap-4">
+<span class="text-[10px] text-accent font-bold">07</span>
+<span class="text-[11px] text-text-primary uppercase font-bold tracking-wider">CRYPTOCURRENCY WALLETS</span>
+</div>
+<span class="text-[9px] text-accent/60 font-bold uppercase">FOUND</span>
+</div>
+<div class="flex items-center justify-between group/line border-b border-border/20 py-2">
+<div class="flex items-center gap-4">
+<span class="text-[10px] text-accent font-bold">08</span>
+<span class="text-[11px] text-text-primary uppercase font-bold tracking-wider">PROFESSIONAL HISTORY</span>
+</div>
+<span class="text-[9px] text-accent/60 font-bold uppercase">●●●●○</span>
+</div>
+<div class="flex items-center justify-between group/line border-b border-border/20 py-2">
+<div class="flex items-center gap-4">
+<span class="text-[10px] text-accent font-bold">09</span>
+<span class="text-[11px] text-text-primary uppercase font-bold tracking-wider">REDACTED_DATA_01</span>
+</div>
+<span class="text-[9px] text-border font-bold uppercase italic">[ BLOCKED ]</span>
+</div>
+<div class="flex items-center justify-between group/line border-b border-border/20 py-2">
+<div class="flex items-center gap-4">
+<span class="text-[10px] text-accent font-bold">10</span>
+<span class="text-[11px] text-text-primary uppercase font-bold tracking-wider">APPENDIX A: RAW METADATA</span>
+</div>
+<span class="text-[9px] text-accent/60 font-bold uppercase">TABLE</span>
+</div>
+<div class="flex items-center justify-between group/line border-b border-border/20 py-2">
+<div class="flex items-center gap-4">
+<span class="text-[10px] text-accent font-bold">11</span>
+<span class="text-[11px] text-text-primary uppercase font-bold tracking-wider">APPENDIX B: SOURCE LINKS</span>
+</div>
+<span class="text-[9px] text-accent/60 font-bold uppercase">LIST</span>
+</div>
+</div>
+</div>
+<!-- Faded Bottom for scrolling implication -->
+<div class="absolute bottom-0 left-0 right-0 h-32 bg-gradient-to-t from-surface-2 to-transparent"></div>
+<div class="absolute bottom-4 left-0 right-0 text-center">
+<span class="text-[9px] text-text-secondary/40 font-bold uppercase tracking-[10px]">INTERNAL USE ONLY</span>
+</div>
+</div>
+</div>
+<!-- PREVIEW FOOTER: DOWNLOAD PANEL -->
+<div class="p-4 bg-surface-2 border-t border-border flex items-center justify-between">
+<div class="flex items-center gap-4">
+<div class="w-10 h-10 border border-accent/20 bg-accent/5 flex items-center justify-center">
+<span class="material-symbols-outlined text-accent">description</span>
+</div>
+<div>
+<p class="text-[11px] font-bold text-text-primary tracking-wide" id="dl-filename">REPORT_DOE_JOHN_20231024.PDF</p>
+<div class="flex items-center gap-3 mt-1" id="dl-meta">
+<span class="text-[9px] text-text-secondary uppercase">Size: 4.2 MB</span>
+<span class="text-[9px] text-text-secondary uppercase">Hash: <span class="text-accent/50">8f2e..9a1b</span></span>
+</div>
+</div>
+</div>
+<div class="flex gap-2">
+<button class="bg-accent text-bg font-black px-4 py-2 text-[10px] uppercase hover:bg-accent-bright transition-all flex items-center gap-2" id="btn-download">
+                        [ ⤓ DOWNLOAD ]
+                    </button>
+<button class="border border-border text-text-secondary px-3 py-2 text-[10px] uppercase font-bold hover:border-accent hover:text-accent transition-colors">
+                        [ COPY LINK ]
+                    </button>
+<button class="border border-border text-text-secondary px-3 py-2 text-[10px] uppercase font-bold hover:border-danger hover:text-danger transition-colors">
+                        [ DELETE ]
+                    </button>
+</div>
+</div>
+</div>
+</main>
+<script>
+const BASE = "http://localhost:8000";
+const STORAGE_TARGET = "argos.target";
+function escapeHtml(s) {
+  if (s == null) return "";
+  return String(s).replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;").replace(/"/g,"&quot;").replace(/'/g,"&#39;");
+}
+const NAV_MAP = {
+  "overview": "/stitch/dashboard.html",
+  "phone lookup": "/stitch/profile.html#phone",
+  "dark web": "/stitch/profile.html#darkweb",
+  "domain search": "/stitch/profile.html#domain",
+  "email osint": "/stitch/profile.html#email",
+  "geo photo": "/stitch/profile.html#geo",
+  "face search": "/stitch/profile.html#face",
+  "correlation": "/stitch/correlation.html",
+  "llm analysis": "/stitch/llm_analysis.html",
+  "report": "/stitch/report.html",
+};
+
+function wireSidebar() {
+  document.querySelectorAll("aside a").forEach(a => {
+    const t = a.textContent.replace(/\s+/g, ' ').trim().toLowerCase();
+    for (const k in NAV_MAP) { if (t.includes(k)) { a.href = NAV_MAP[k]; break; } }
+  });
+}
+
+let lastBlob = null;
+let lastFilename = "report.pdf";
+
+function setStatus(text, color) {
+  const btn = document.getElementById("btn-generate");
+  if (btn) { btn.textContent = text; }
+  // show error inline in download meta
+  if (color === "#ff4444") {
+    const meta = document.getElementById("dl-meta");
+    if (meta) meta.innerHTML = '<span style="color:#ff4444">[ ERR ] ' + escapeHtml(text) + "</span>";
+  }
+}
+
+async function generateReport() {
+  const target = (document.getElementById("report-target-display") || {}).textContent || sessionStorage.getItem(STORAGE_TARGET) || "";
+  if (!target) { setStatus("[ ERR ] no target", "#ff4444"); return; }
+
+  const btn = document.getElementById("btn-generate");
+  if (btn) { btn.disabled = true; btn.textContent = "GENERATING..."; }
+
+  try {
+    const isEmail = target.includes("@");
+    const param = isEmail ? "email=" + encodeURIComponent(target) : "username=" + encodeURIComponent(target);
+    const r = await fetch(BASE + "/report/generate?" + param, { method: "POST" });
+    if (!r.ok) throw new Error(r.status + " " + r.statusText);
+    lastBlob = await r.blob();
+    const ts = new Date().toISOString().replace(/[^0-9]/g, "").slice(0, 14);
+    lastFilename = "argos_" + target.replace(/[@.]/g, "_") + "_" + ts + ".pdf";
+
+    const fn = document.getElementById("dl-filename");
+    if (fn) fn.textContent = lastFilename.toUpperCase();
+    const meta = document.getElementById("dl-meta");
+    if (meta) meta.innerHTML = '<span class="text-[9px] text-text-secondary uppercase">SIZE: ' + Math.round(lastBlob.size / 1024) + ' KB</span>' +
+      '<span class="text-[9px] text-text-secondary uppercase">GENERATED: ' + new Date().toLocaleTimeString() + '</span>';
+
+    // enable download button
+    const dlBtn = document.getElementById("btn-download");
+    if (dlBtn) dlBtn.onclick = () => {
+      const url = URL.createObjectURL(lastBlob);
+      const a = document.createElement("a");
+      a.href = url; a.download = lastFilename; a.click();
+      URL.revokeObjectURL(url);
+    };
+
+    if (btn) { btn.textContent = "[ ✓ GENERATED ]"; btn.disabled = false; }
+  } catch (e) {
+    setStatus("[ ERR ] " + e.message, "#ff4444");
+    if (btn) { btn.disabled = false; btn.textContent = "› GENERATE REPORT"; }
+  }
+}
+
+document.addEventListener("DOMContentLoaded", () => {
+  wireSidebar();
+  const target = sessionStorage.getItem(STORAGE_TARGET) || "";
+  const display = document.getElementById("report-target-display");
+  if (display && target) display.textContent = target;
+  const btn = document.getElementById("btn-generate");
+  if (btn) btn.addEventListener("click", generateReport);
+  // micro-interactions
+  document.querySelectorAll("button, a").forEach(el => {
+    el.addEventListener("mousedown", () => { el.style.transform = "scale(0.98)"; });
+    el.addEventListener("mouseup", () => { el.style.transform = "scale(1)"; });
+  });
+});
+      function toggleSidebar() {
+    var s = document.getElementById('sidebar');
+    if (s) s.classList.toggle('sidebar-open');
+  }</script>
+</body></html>

@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="tr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Footprint OSINT</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:#0a0e0b;color:#c8d6c3;font-family:'Courier New',monospace;min-height:100vh;display:flex;flex-direction:column}
+.header{padding:12px 20px;border-bottom:1px solid #1a2e1a;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+.header h1{color:#2ecc71;font-size:16px;white-space:nowrap}
+.base-url{background:#0d1210;border:1px solid #2ecc71;color:#2ecc71;padding:6px 10px;font-family:inherit;font-size:13px;flex:1;min-width:200px;border-radius:3px}
+.tabs{display:flex;border-bottom:1px solid #1a2e1a;overflow-x:auto}
+.tab{padding:10px 18px;cursor:pointer;color:#5a7a5a;font-size:13px;border-bottom:2px solid transparent;white-space:nowrap;transition:color .2s}
+.tab:hover{color:#8ab88a}
+.tab.active{color:#2ecc71;border-bottom-color:#2ecc71}
+.panels{flex:1;padding:20px;overflow-y:auto}
+.panel{display:none}
+.panel.active{display:block}
+.panel-desc{color:#5a7a5a;font-size:12px;margin-bottom:16px;border-left:2px solid #2ecc71;padding-left:10px}
+.form-group{margin-bottom:10px}
+.form-group label{display:block;color:#5a7a5a;font-size:11px;margin-bottom:4px}
+.form-group input,.form-group select{background:#0d1210;border:1px solid #3a6a3a;color:#c8d6c3;padding:9px 12px;font-family:inherit;font-size:13px;border-radius:3px;width:100%;transition:border-color .2s}
+.form-group input:focus,.form-group select:focus{outline:none;border-color:#2ecc71}
+.form-row{display:flex;gap:10px;flex-wrap:wrap}
+.form-row .form-group{flex:1;min-width:180px}
+.btn{background:#2ecc71;color:#0a0e0b;border:none;padding:10px 28px;font-family:inherit;font-size:13px;font-weight:bold;cursor:pointer;border-radius:3px;margin-top:12px;transition:background .2s}
+.btn:hover{background:#27ae60}
+.btn:disabled{background:#1a4a2a;color:#3a6a3a;cursor:not-allowed}
+.btn-row{display:flex;align-items:center;gap:12px}
+.status-msg{font-size:12px;color:#f39c12}
+.error-box{background:#2a0a0a;border:1px solid #e74c3c;color:#e74c3c;padding:10px 14px;border-radius:3px;font-size:12px;margin-top:12px;display:none}
+.result-area{margin-top:16px;display:none}
+.cards{display:grid;grid-template-columns:repeat(auto-fill,minmax(260px,1fr));gap:12px}
+.card{background:#0d1210;border:1px solid #1a2e1a;border-radius:4px;padding:14px}
+.card-title{color:#2ecc71;font-size:11px;text-transform:uppercase;margin-bottom:6px;letter-spacing:1px}
+.card-value{color:#c8d6c3;font-size:14px;word-break:break-word}
+.card-value.big{font-size:28px;font-weight:bold;color:#2ecc71}
+.card-sub{color:#5a7a5a;font-size:11px;margin-top:4px}
+.badge{display:inline-block;padding:2px 8px;border-radius:3px;font-size:11px;font-weight:bold}
+.badge-green{background:#0d2e1a;color:#2ecc71;border:1px solid #2ecc71}
+.badge-red{background:#2a0a0a;color:#e74c3c;border:1px solid #e74c3c}
+.badge-yellow{background:#2a2a0a;color:#f39c12;border:1px solid #f39c12}
+.badge-gray{background:#1a1a1a;color:#888;border:1px solid #555}
+.source-list{list-style:none;margin-top:8px}
+.source-list li{padding:8px 10px;border-bottom:1px solid #1a2e1a;font-size:12px}
+.source-list li:last-child{border-bottom:none}
+.source-name{color:#2ecc71;font-weight:bold}
+.source-date{color:#5a7a5a;margin-left:8px}
+.source-fields{color:#8ab88a;font-size:11px;margin-top:2px}
+.drop-zone{border:2px dashed #3a6a3a;border-radius:4px;padding:30px;text-align:center;color:#5a7a5a;cursor:pointer;transition:border-color .2s}
+.drop-zone:hover,.drop-zone.dragover{border-color:#2ecc71;color:#2ecc71}
+.drop-zone input[type=file]{display:none}
+.platform-grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(220px,1fr));gap:10px}
+.platform-card{background:#0d1210;border:1px solid #1a2e1a;border-radius:4px;padding:12px;display:flex;align-items:center;gap:10px}
+.platform-card .dot{width:10px;height:10px;border-radius:50%}
+.dot-green{background:#2ecc71}
+.dot-red{background:#e74c3c}
+.dot-yellow{background:#f39c12}
+.platform-card .pname{color:#c8d6c3;font-size:13px;font-weight:bold}
+.platform-card .pbio{color:#5a7a5a;font-size:11px;margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;max-width:160px}
+.json-fallback{background:#0d1210;border:1px solid #1a2e1a;border-radius:3px;padding:14px;overflow-x:auto;max-height:50vh;overflow-y:auto}
+.json-fallback pre{color:#8ab88a;font-size:12px;white-space:pre-wrap;word-break:break-word}
+.placeholder{color:#3a5a3a;text-align:center;padding:40px;font-size:14px}
+/* Teknik detaylar toggle */
+details.tech-details{margin-top:12px}
+details.tech-details>summary{cursor:pointer;color:#5a7a5a;font-size:11px;padding:6px 12px;background:#0d1210;border:1px solid #1a2e1a;border-radius:3px;display:inline-block;user-select:none;list-style:none;transition:.15s}
+details.tech-details>summary::-webkit-details-marker{display:none}
+details.tech-details>summary::before{content:"▶ ";font-size:9px}
+details.tech-details[open]>summary::before{content:"▼ "}
+details.tech-details>summary:hover{color:#2ecc71;border-color:#2ecc71}
+details.tech-details[open]>summary{color:#2ecc71;border-color:#2ecc71}
+details.tech-details .json-fallback{margin-top:8px}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>⚡ FOOTPRINT OSINT</h1>
+  <input class="base-url" id="baseUrl" value="">
+</div>
+
+<div class="tabs" id="tabs">
+  <div class="tab active" data-panel="unified">Unified Scan</div>
+  <div class="tab" data-panel="email">Email OSINT</div>
+  <div class="tab" data-panel="phone">Telefon</div>
+  <div class="tab" data-panel="darkweb">Dark Web</div>
+  <div class="tab" data-panel="social">Sosyal Medya</div>
+  <div class="tab" data-panel="geo">Geo/Fotoğraf</div>
+  <div class="tab" data-panel="domain">Domain</div>
+  <div class="tab" data-panel="report">Rapor</div>
+</div>
+
+<div class="panels">
+
+  <!-- Unified Scan -->
+  <div class="panel active" id="panel-unified">
+    <p class="panel-desc">Tüm modülleri tek seferde çalıştırır: email, telefon, sosyal medya ve dark web taraması.</p>
+    <div class="form-group"><label>Email</label><input id="u-email" placeholder="ornek@email.com"></div>
+    <div class="form-group"><label>Kullanıcı Adı</label><input id="u-username" placeholder="johndoe"></div>
+    <div class="form-group"><label>Telefon</label><input id="u-phone" placeholder="+905xxxxxxxxx"></div>
+    <div class="btn-row">
+      <button class="btn" id="u-btn" onclick="runUnified()">⚡ TARA</button>
+      <span class="status-msg" id="u-status"></span>
+    </div>
+    <div class="error-box" id="u-error"></div>
+    <div class="result-area" id="u-result">
+      <div class="cards" id="u-cards"></div>
+      <details class="tech-details">
+        <summary>Teknik Detaylar</summary>
+        <div class="json-fallback"><pre id="u-json"></pre></div>
+      </details>
+    </div>
+  </div>
+
+  <!-- Email OSINT -->
+  <div class="panel" id="panel-email">
+    <p class="panel-desc">Email adresini analiz eder: MX kayıtları, Gravatar, EmailRep itibar skoru ve genel değerlendirme.</p>
+    <div class="form-group"><label>Email Adresi</label><input id="e-input" placeholder="ornek@email.com"></div>
+    <div class="btn-row">
+      <button class="btn" id="e-btn" onclick="runEmail()">SORGULA</button>
+      <span class="status-msg" id="e-status"></span>
+    </div>
+    <div class="error-box" id="e-error"></div>
+    <div class="result-area" id="e-result">
+      <div class="cards" id="e-cards"></div>
+    </div>
+  </div>
+
+  <!-- Telefon -->
+  <div class="panel" id="panel-phone">
+    <p class="panel-desc">Telefon numarasını sorgular: operatör, hat tipi, ülke ve konum bilgisi.</p>
+    <div class="form-group"><label>Telefon Numarası</label><input id="p-input" placeholder="+905xxxxxxxxx veya 05xxxxxxxxx"></div>
+    <div class="btn-row">
+      <button class="btn" id="p-btn" onclick="runPhone()">SORGULA</button>
+      <span class="status-msg" id="p-status"></span>
+    </div>
+    <div class="error-box" id="p-error"></div>
+    <div class="result-area" id="p-result">
+      <div class="cards" id="p-cards"></div>
+    </div>
+  </div>
+
+  <!-- Dark Web -->
+  <div class="panel" id="panel-darkweb">
+    <p class="panel-desc">Veri sızıntılarını kontrol eder: breach sayısı, kaynak listesi, sızan veri alanları.</p>
+    <div class="form-row">
+      <div class="form-group"><label>Sorgu</label><input id="d-input" placeholder="Email, kullanıcı adı veya telefon"></div>
+      <div class="form-group" style="max-width:150px"><label>Tip</label>
+        <select id="d-type"><option value="auto">Otomatik</option><option value="email">Email</option><option value="username">Kullanıcı Adı</option><option value="phone">Telefon</option></select>
+      </div>
+    </div>
+    <div class="btn-row">
+      <button class="btn" id="d-btn" onclick="runDarkweb()">SORGULA</button>
+      <span class="status-msg" id="d-status"></span>
+    </div>
+    <div class="error-box" id="d-error"></div>
+    <div class="result-area" id="d-result">
+      <div class="cards" id="d-cards"></div>
+      <ul class="source-list" id="d-sources"></ul>
+    </div>
+  </div>
+
+  <!-- Sosyal Medya -->
+  <div class="panel" id="panel-social">
+    <p class="panel-desc">Kullanıcı adını tüm platformlarda arar: varlık durumu ve bio önizlemesi.</p>
+    <div class="form-group"><label>Kullanıcı Adı</label><input id="s-input" placeholder="johndoe"></div>
+    <div class="btn-row">
+      <button class="btn" id="s-btn" onclick="runSocial()">TARA</button>
+      <span class="status-msg" id="s-status"></span>
+    </div>
+    <div class="error-box" id="s-error"></div>
+    <div class="result-area" id="s-result">
+      <div class="platform-grid" id="s-grid"></div>
+    </div>
+  </div>
+
+  <!-- Geo/Fotoğraf -->
+  <div class="panel" id="panel-geo">
+    <p class="panel-desc">Fotoğraftan EXIF/GPS verisi çıkarır: koordinatlar, ülke, bölge ve güven skoru.</p>
+    <div class="drop-zone" id="geo-drop" onclick="document.getElementById('geo-file').click()">
+      📁 Fotoğrafı sürükle-bırak veya tıkla
+      <input type="file" id="geo-file" accept="image/*">
+    </div>
+    <div class="form-group" style="margin-top:10px"><label>Timestamp (opsiyonel)</label><input id="geo-ts" placeholder="2024-01-15 14:30:00"></div>
+    <div class="btn-row">
+      <button class="btn" id="g-btn" onclick="runGeo()">ANALİZ ET</button>
+      <span class="status-msg" id="g-status"></span>
+    </div>
+    <div class="error-box" id="g-error"></div>
+    <div class="result-area" id="g-result">
+      <div class="cards" id="g-cards"></div>
+    </div>
+  </div>
+
+  <!-- Domain -->
+  <div class="panel" id="panel-domain">
+    <div class="placeholder">🔧 Domain tarama modülü yakında eklenecek.</div>
+  </div>
+
+  <!-- Rapor -->
+  <div class="panel" id="panel-report">
+    <div class="placeholder">📄 Rapor oluşturma modülü yakında eklenecek.</div>
+  </div>
+
+</div>
+
+<script>
+const baseUrl = document.getElementById('baseUrl');
+baseUrl.value = location.origin;
+
+// Tabs
+document.getElementById('tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.tab');
+  if (!tab) return;
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.panel').forEach(p => p.classList.remove('active'));
+  tab.classList.add('active');
+  document.getElementById('panel-' + tab.dataset.panel).classList.add('active');
+});
+
+function api(path) { return baseUrl.value.replace(/\/+$/, '') + path; }
+
+function showLoading(prefix) {
+  document.getElementById(prefix + '-btn').disabled = true;
+  document.getElementById(prefix + '-status').textContent = '⏳ taranıyor...';
+  document.getElementById(prefix + '-error').style.display = 'none';
+  document.getElementById(prefix + '-result').style.display = 'none';
+}
+function hideLoading(prefix) {
+  document.getElementById(prefix + '-btn').disabled = false;
+  document.getElementById(prefix + '-status').textContent = '';
+}
+function showError(prefix, msg) {
+  const el = document.getElementById(prefix + '-error');
+  el.textContent = '✗ ' + msg;
+  el.style.display = 'block';
+}
+function showResult(prefix) {
+  document.getElementById(prefix + '-result').style.display = 'block';
+}
+
+function makeCard(title, value, sub) {
+  return `<div class="card"><div class="card-title">${title}</div><div class="card-value">${value}</div>${sub ? '<div class="card-sub">' + sub + '</div>' : ''}</div>`;
+}
+function makeBigCard(title, value, sub) {
+  return `<div class="card"><div class="card-title">${title}</div><div class="card-value big">${value}</div>${sub ? '<div class="card-sub">' + sub + '</div>' : ''}</div>`;
+}
+
+// Unified Scan
+async function runUnified() {
+  const email = document.getElementById('u-email').value.trim();
+  const username = document.getElementById('u-username').value.trim();
+  const phone = document.getElementById('u-phone').value.trim();
+  if (!email && !username && !phone) return;
+  showLoading('u');
+  try {
+    const params = new URLSearchParams();
+    if (email) params.set('email', email);
+    if (username) params.set('username', username);
+    if (phone) params.set('phone', phone);
+    const r = await fetch(api('/scan/full?' + params.toString()));
+    const data = await r.json();
+    hideLoading('u');
+    const cards = document.getElementById('u-cards');
+    let html = '';
+
+    // Verdict
+    const verdictMap = {ok:['Tüm kaynaklar başarılı','badge-green'], partial:['Kısmi başarı','badge-yellow'], fail:['Tarama başarısız','badge-red']};
+    const v = verdictMap[data.verdict] || ['Sonuç','badge-gray'];
+    html += makeCard('Genel Sonuç', `<span class="badge ${v[1]}">${v[0]}</span>`);
+    if (data.took_ms !== undefined) html += makeCard('Süre', data.took_ms + ' ms');
+
+    // Modül bazlı sonuçlar
+    const results = data.results || {};
+    if (results.mosint) {
+      const m = results.mosint;
+      if (m.ok && m.data) {
+        const md = m.data;
+        const ok = md.deliverable === 'deliverable' || md.is_smtp_valid;
+        html += makeCard('📧 Email', ok ? '<span class="badge badge-green">Geçerli</span>' : '<span class="badge badge-yellow">Belirsiz</span>', md.provider || email);
+      } else {
+        html += makeCard('📧 Email', '<span class="badge badge-red">Hata</span>', (m.error||'').slice(0,60));
+      }
+    }
+    if (results.hibp) {
+      const h = results.hibp;
+      const cnt = h.count ?? (h.items?.length || 0);
+      html += makeBigCard('🔓 Sızıntılar', cnt, cnt > 0 ? 'veri ihlalinde bulundu' : 'sızıntı yok');
+    }
+    if (results.social) {
+      const s = results.social;
+      if (s.ok && s.data) {
+        const cnt = (s.data.results || []).length;
+        html += makeBigCard('👥 Sosyal Medya', cnt, 'aday tarandı');
+      } else {
+        html += makeCard('👥 Sosyal Medya', '<span class="badge badge-red">Hata</span>', (s.error||'').slice(0,60));
+      }
+    }
+    if (results.linkedin) {
+      const l = results.linkedin;
+      if (l.ok && l.data) {
+        html += makeCard('💼 LinkedIn', '<span class="badge badge-green">Profil var</span>', l.data.title || l.data.name || '');
+      } else {
+        html += makeCard('💼 LinkedIn', '<span class="badge badge-yellow">Bulunamadı</span>');
+      }
+    }
+
+    if (!html) html = makeCard('Sonuç', 'Veri döndü', 'detayları aşağıda görüntüleyin');
+    cards.innerHTML = html;
+    document.getElementById('u-json').textContent = JSON.stringify(data, null, 2);
+    showResult('u');
+  } catch (e) { hideLoading('u'); showError('u', e.message); }
+}
+
+// Email OSINT
+async function runEmail() {
+  const q = document.getElementById('e-input').value.trim();
+  if (!q) return;
+  showLoading('e');
+  try {
+    const r = await fetch(api('/mosint/full?email=' + encodeURIComponent(q)));
+    const data = await r.json();
+    hideLoading('e');
+    const cards = document.getElementById('e-cards');
+    let html = '';
+
+    // Email status
+    let statusBadge = '<span class="badge badge-yellow">Belirsiz</span>';
+    if (data.deliverable === 'deliverable' || data.is_smtp_valid === true) statusBadge = '<span class="badge badge-green">Geçerli</span>';
+    else if (data.deliverable === 'undeliverable' || data.is_smtp_valid === false) statusBadge = '<span class="badge badge-red">Geçersiz</span>';
+    html += makeCard('📧 Email', statusBadge, q);
+
+    if (data.provider) html += makeCard('📬 Sağlayıcı', data.provider);
+
+    // MX
+    if (data.mx) {
+      const mxArr = (data.mx.servers || (Array.isArray(data.mx)?data.mx:[]));
+      if (mxArr.length) html += makeBigCard('📡 MX', mxArr.length, 'mail sunucusu');
+    }
+
+    // SMTP
+    if (data.smtp) {
+      const s = data.smtp;
+      if (s.ok && s.code) html += makeCard('✉ SMTP', '<span class="badge badge-green">'+s.code+'</span>', s.message||'OK');
+      else if (s.error) html += makeCard('✉ SMTP', '<span class="badge badge-yellow">' + s.error.slice(0,50) + '</span>');
+    }
+
+    // HIBP
+    if (data.hibp) {
+      const cnt = data.hibp.count ?? (data.hibp.items?.length || 0);
+      html += makeBigCard('🔓 HIBP', cnt, cnt > 0 ? 'veri ihlali bulundu' : 'sızıntı yok');
+    }
+
+    // Gravatar
+    if (data.gravatar) {
+      const g = data.gravatar;
+      const dn = g.profile?.entry?.[0]?.displayName || '';
+      html += makeCard('👤 Gravatar', g.exists ? '<span class="badge badge-green">Profil var</span>' : '<span class="badge badge-gray">Yok</span>', dn);
+    }
+
+    // EmailRep
+    if (data.emailrep?.ok && data.emailrep.data) {
+      const rep = data.emailrep.data;
+      html += makeCard('📊 İtibar', rep.reputation || '?', rep.suspicious === true ? 'şüpheli' : (rep.suspicious === false ? 'temiz' : ''));
+    }
+
+    // Quality
+    if (typeof data.quality_score === 'number') html += makeCard('⭐ Kalite', Math.round(data.quality_score*100) + '/100');
+    if (data.is_disposable) html += makeCard('🗑 Tek kullanımlık', '<span class="badge badge-yellow">Evet</span>');
+    if (data.is_free_email) html += makeCard('🆓 Free', '<span class="badge badge-yellow">Evet</span>');
+
+    if (!html) html = makeCard('Sonuç', 'Veri döndü ama özet üretilemedi');
+    cards.innerHTML = html;
+    showResult('e');
+  } catch (e) { hideLoading('e'); showError('e', e.message); }
+}
+
+// Phone
+async function runPhone() {
+  const q = document.getElementById('p-input').value.trim();
+  if (!q) return;
+  showLoading('p');
+  try {
+    const r = await fetch(api('/phone/lookup?number=' + encodeURIComponent(q)));
+    const data = await r.json();
+    hideLoading('p');
+    const cards = document.getElementById('p-cards');
+    let html = '';
+    html += makeCard('Normalize', data.normalized || '—');
+    const nv = data.numverify || {};
+    const nl = data.numlookup || {};
+    html += makeCard('Operatör', nv.carrier || nl.carrier || '—');
+    html += makeCard('Hat Tipi', nv.line_type || nl.line_type || '—');
+    html += makeCard('Ülke', nv.country || nl.country || '—');
+    html += makeCard('Konum', nv.location || nl.location || '—');
+    if (nv.valid !== undefined) html += makeCard('Geçerlilik', nv.valid ? '<span class="badge badge-green">Geçerli</span>' : '<span class="badge badge-red">Geçersiz</span>');
+    cards.innerHTML = html;
+    showResult('p');
+  } catch (e) { hideLoading('p'); showError('p', e.message); }
+}
+
+// Dark Web
+async function runDarkweb() {
+  const q = document.getElementById('d-input').value.trim();
+  const t = document.getElementById('d-type').value;
+  if (!q) return;
+  showLoading('d');
+  try {
+    const r = await fetch(api('/darkweb/lookup?query=' + encodeURIComponent(q) + '&type=' + t));
+    const data = await r.json();
+    hideLoading('d');
+    const cards = document.getElementById('d-cards');
+    const sources = document.getElementById('d-sources');
+    const summary = data.summary || {};
+    const lc = data.leakcheck || {};
+    cards.innerHTML = makeBigCard('Breach Sayısı', summary.total_breaches || 0, 'veri sızıntısı tespit edildi');
+    let srcHtml = '';
+    const srcList = lc.sources || [];
+    if (srcList.length) {
+      srcList.forEach(s => {
+        srcHtml += `<li><span class="source-name">${s.name || '?'}</span><span class="source-date">${s.date || ''}</span><div class="source-fields">${(s.fields || []).join(', ')}</div></li>`;
+      });
+    } else if (!lc.ok) {
+      srcHtml = `<li style="color:#f39c12">${lc.error || 'API anahtarı eksik veya hata oluştu'}</li>`;
+    } else {
+      srcHtml = '<li style="color:#5a7a5a">Sızıntı bulunamadı ✓</li>';
+    }
+    sources.innerHTML = srcHtml;
+    showResult('d');
+  } catch (e) { hideLoading('d'); showError('d', e.message); }
+}
+
+// Social
+async function runSocial() {
+  const q = document.getElementById('s-input').value.trim();
+  if (!q) return;
+  showLoading('s');
+  try {
+    const r = await fetch(api('/username-bios?username=' + encodeURIComponent(q)));
+    const data = await r.json();
+    hideLoading('s');
+    const grid = document.getElementById('s-grid');
+    let html = '';
+    const items = Array.isArray(data) ? data : (data.results || data.platforms || Object.entries(data).map(([k,v]) => ({platform:k,...(typeof v==='object'?v:{status:v})})));
+    if (Array.isArray(items) && items.length) {
+      items.forEach(p => {
+        const status = p.status || p.exists || 'unknown';
+        const dotClass = status === 'exists' || status === 'found' || status === true ? 'dot-green' : (status === 'not_found' || status === false ? 'dot-red' : 'dot-yellow');
+        const name = p.platform || p.site || p.name || '?';
+        const bio = p.bio || p.description || '';
+        html += `<div class="platform-card"><div class="dot ${dotClass}"></div><div><div class="pname">${name}</div><div class="pbio" title="${bio}">${bio || '—'}</div></div></div>`;
+      });
+    } else {
+      html = '<div class="card"><div class="card-value"><pre style="font-size:11px;color:#8ab88a">' + JSON.stringify(data, null, 2).slice(0, 600) + '</pre></div></div>';
+    }
+    grid.innerHTML = html;
+    showResult('s');
+  } catch (e) { hideLoading('s'); showError('s', e.message); }
+}
+
+// Geo
+const dropZone = document.getElementById('geo-drop');
+const geoFile = document.getElementById('geo-file');
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => { e.preventDefault(); dropZone.classList.remove('dragover'); geoFile.files = e.dataTransfer.files; dropZone.textContent = '📎 ' + e.dataTransfer.files[0].name; });
+geoFile.addEventListener('change', () => { if (geoFile.files[0]) dropZone.textContent = '📎 ' + geoFile.files[0].name; });
+
+async function runGeo() {
+  const file = geoFile.files[0];
+  if (!file) return;
+  showLoading('g');
+  try {
+    const fd = new FormData();
+    fd.append('image', file);
+    const ts = document.getElementById('geo-ts').value.trim();
+    if (ts) fd.append('timestamp', ts);
+    const r = await fetch(api('/geo/analyze-photo'), { method: 'POST', body: fd });
+    const data = await r.json();
+    hideLoading('g');
+    const cards = document.getElementById('g-cards');
+    let html = '';
+    if (data.fallback === true) {
+      html += makeCard('Sonuç', '<span class="badge badge-red">Konum belirlenemedi</span>', data.reasoning?.error || 'sinyal yok');
+    } else {
+      const srcMap = {exif:'EXIF GPS', visual_fusion:'Görsel analiz', solar_fusion:'Güneş açısı', full_fusion:'Tam füzyon', plate_match:'Plaka eşleştirme', ai_fusion:'AI füzyon'};
+      const srcLabel = srcMap[data.source] || data.source || '?';
+      if (data.source) html += makeCard('Kaynak', `<span class="badge badge-green">${srcLabel}</span>`);
+      if (data.lat != null && data.lng != null) {
+        html += makeCard('Koordinatlar', `${Number(data.lat).toFixed(4)}, ${Number(data.lng).toFixed(4)}`,
+          `<a href="https://www.google.com/maps?q=${data.lat},${data.lng}" target="_blank" style="color:#2ecc71">Haritada Aç ↗</a>`);
+      }
+      if (data.country || data.region) html += makeCard('Konum', `${data.country || ''} ${data.region || ''}`.trim());
+      if (data.confidence != null) html += makeCard('Güven Skoru', `%${Math.round(data.confidence * 100)}`);
+      if (data.radius_km) html += makeCard('Yarıçap', `±${data.radius_km} km`);
+    }
+    if (!html) html = makeCard('Sonuç', 'Veri döndü', '');
+    cards.innerHTML = html;
+    showResult('g');
+  } catch (e) { hideLoading('g'); showError('g', e.message); }
+}
+</script>
+</body>
+</html>
